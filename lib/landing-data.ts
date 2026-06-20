@@ -86,29 +86,26 @@ export type ProductSummary = {
   features: string[];
   imageSrc: string;
   imageAlt: string;
-  serviceLabel: string;
 };
 
 export const LANDING_PRODUCTS: ProductSummary[] = [
   {
     id: "fr4",
     title: "برد FR-4",
-    priceHtml: "از <strong>$2.00</strong> / ۵ عدد",
+    priceHtml: "از <strong>۱۵۰,۰۰۰ تومان</strong> / ۵ عدد",
     leadTime: "زمان ساخت: ۲۴ ساعت",
     features: ["۱ تا ۳۲ لایه", "POFV رایگان برای ۶+ لایه", "کنترل امپدانس ±۱۰٪"],
     imageSrc: "/products/fr4-pcb.svg",
     imageAlt: "نمونه برد FR-4 با مسیرهای طلایی",
-    serviceLabel: "خدمات برد FR-4",
   },
   {
     id: "stencil",
     title: "Stencil SMT",
-    priceHtml: "از <strong>$3.00</strong>",
+    priceHtml: "از <strong>۲۵۰,۰۰۰ تومان</strong>",
     leadTime: "زمان ساخت: ۱۲–۴۸ ساعت",
     features: ["فولاد ضدزنگ ۳۰۴ HTA", "دقت برش لیزری ±۰.۰۰۳ میلی‌متر", "الکتروپولیش و نانو-coating"],
     imageSrc: "/products/smt-stencil.svg",
     imageAlt: "استencil SMT با برش لیزری دقیق",
-    serviceLabel: "خدمات Stencil SMT",
   },
 ];
 

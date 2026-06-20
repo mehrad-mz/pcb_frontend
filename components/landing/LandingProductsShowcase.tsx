@@ -16,10 +16,7 @@ function ProductDetail({ product }: { product: ProductSummary }) {
       <p className="landing-product-lead">{product.leadTime}</p>
       <div className="landing-product-actions">
         <a href={DJANGO_ROUTES.newOrder} className="landing-btn landing-btn-primary">
-          استعلام فوری
-        </a>
-        <a href={DJANGO_ROUTES.newOrder} className="landing-btn landing-btn-ghost">
-          {product.serviceLabel}
+          سفارش
         </a>
       </div>
     </div>
