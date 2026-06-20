@@ -95,8 +95,11 @@ function getCanvasViewport(canvas) {
   };
 }
 
-function getPixelRatio(isMobile) {
-  return Math.min(window.devicePixelRatio || 1, isMobile ? 1.25 : 1.5);
+function getPixelRatio(quality, isMobile) {
+  const dpr = window.devicePixelRatio || 1;
+  if (quality === 'low') return 1;
+  if (quality === 'medium') return Math.min(dpr, isMobile ? 1.25 : 1);
+  return Math.min(dpr, isMobile ? 1.25 : 1.25);
 }
 
 /**
@@ -106,7 +109,8 @@ export function createPcbScrollScene(canvas, options = {}) {
   const {
     prefersReducedMotion = false,
     isMobile = false,
-    lowPowerMode = false,
+    quality = 'medium',
+    onNeedsFrame = null,
     theme = 'dark',
   } = options;
 
@@ -116,11 +120,11 @@ export function createPcbScrollScene(canvas, options = {}) {
 
   const renderer = new THREE.WebGLRenderer({
     canvas,
-    antialias: !lowPowerMode && !isMobile,
+    antialias: quality === 'high' && !isMobile,
     alpha: isDark,
-    powerPreference: 'default',
+    powerPreference: quality === 'low' ? 'low-power' : 'default',
   });
-  renderer.setPixelRatio(getPixelRatio(isMobile));
+  renderer.setPixelRatio(getPixelRatio(quality, isMobile));
   renderer.setSize(initialWidth, initialHeight, false);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -527,7 +531,7 @@ export function createPcbScrollScene(canvas, options = {}) {
 
   let composer = null;
   let bloom = null;
-  const useComposer = !prefersReducedMotion && !isMobile && !lowPowerMode;
+  const useComposer = quality === 'high' && !prefersReducedMotion && !isMobile;
 
   if (useComposer) {
     composer = new EffectComposer(renderer);
@@ -555,7 +559,7 @@ export function createPcbScrollScene(canvas, options = {}) {
 
   const smoothScroll = { target: 0, current: 0 };
 
-  function setPathProgress(t) {
+  function setPathProgress(t, animatePulse = false) {
     const clamped = THREE.MathUtils.clamp(t, 0, 1);
     const count = Math.max(2, Math.floor(clamped * PATH_SEGMENTS) + 1);
     pathGeometry.setDrawRange(0, count);
@@ -565,8 +569,12 @@ export function createPcbScrollScene(canvas, options = {}) {
     const point = getPolylinePoint(circuitSamples, clamped);
     pulse.position.set(point.x, TRACE_SURFACE_Y, point.z);
 
-    const scale = 1 + Math.sin(performance.now() * 0.008) * 0.1;
-    pulse.scale.setScalar(scale);
+    if (animatePulse) {
+      const scale = 1 + Math.sin(performance.now() * 0.008) * 0.1;
+      pulse.scale.setScalar(scale);
+    } else {
+      pulse.scale.setScalar(1);
+    }
   }
 
   function updateCameraFollowPulse() {
@@ -592,6 +600,10 @@ export function createPcbScrollScene(canvas, options = {}) {
     camera.lookAt(lookSmooth);
   }
 
+  function requestFrame() {
+    onNeedsFrame?.();
+  }
+
   function highlightMilestone(index) {
     if (index === activeMilestone) return;
     activeMilestone = index;
@@ -602,6 +614,7 @@ export function createPcbScrollScene(canvas, options = {}) {
         body.material.emissiveIntensity = i === index ? 0.45 : 0;
       }
     });
+    requestFrame();
   }
 
   function setScrollTarget(t) {
@@ -611,19 +624,26 @@ export function createPcbScrollScene(canvas, options = {}) {
       tick();
       if (composer) composer.render();
       else renderer.render(scene, camera);
+      return;
     }
+    requestFrame();
   }
 
   function isScrollAnimating() {
     return Math.abs(smoothScroll.target - smoothScroll.current) > 0.001;
   }
 
+  function isAnimating() {
+    return isScrollAnimating();
+  }
+
   function tick() {
+    const scrolling = isScrollAnimating();
     smoothScroll.current += (smoothScroll.target - smoothScroll.current) * 0.07;
     if (Math.abs(smoothScroll.target - smoothScroll.current) < 0.0005) {
       smoothScroll.current = smoothScroll.target;
     }
-    setPathProgress(smoothScroll.current);
+    setPathProgress(smoothScroll.current, scrolling);
     updateCameraFollowPulse();
     if (bloom) {
       bloom.strength = 0.4 + smoothScroll.current * 0.25;
@@ -643,7 +663,7 @@ export function createPcbScrollScene(canvas, options = {}) {
     camera.aspect = width / height;
     camera.fov = isMobile ? 42 : 38;
     camera.updateProjectionMatrix();
-    renderer.setPixelRatio(getPixelRatio(isMobile));
+    renderer.setPixelRatio(getPixelRatio(quality, isMobile));
     renderer.setSize(width, height, false);
     if (composer) composer.setSize(width, height);
     if (bloom) bloom.resolution.set(width, height);
@@ -662,6 +682,8 @@ export function createPcbScrollScene(canvas, options = {}) {
     setPathProgress,
     updateCameraFollowPulse,
     isScrollAnimating,
+    isAnimating,
+    requestFrame,
     dispose: () => {
       renderer.dispose();
       pathGeometry.dispose();
