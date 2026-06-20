@@ -86,6 +86,19 @@ function getPolylinePoint(samples, t) {
   return samples[samples.length - 1].clone();
 }
 
+function getCanvasViewport(canvas) {
+  const w = Math.round(canvas.clientWidth);
+  const h = Math.round(canvas.clientHeight);
+  return {
+    width: Math.max(1, w),
+    height: Math.max(1, h),
+  };
+}
+
+function getPixelRatio(isMobile) {
+  return Math.min(window.devicePixelRatio || 1, isMobile ? 1.25 : 1.5);
+}
+
 /**
  * Full PCB scroll scene from pcb_mvt-main-2, adapted for the dark landing page.
  */
@@ -93,20 +106,22 @@ export function createPcbScrollScene(canvas, options = {}) {
   const {
     prefersReducedMotion = false,
     isMobile = false,
+    lowPowerMode = false,
     theme = 'dark',
   } = options;
 
   const isDark = theme === 'dark';
   const bgColor = isDark ? 0x04070b : 0xc8d4dc;
+  const { width: initialWidth, height: initialHeight } = getCanvasViewport(canvas);
 
   const renderer = new THREE.WebGLRenderer({
     canvas,
-    antialias: true,
+    antialias: !lowPowerMode && !isMobile,
     alpha: isDark,
-    powerPreference: 'high-performance',
+    powerPreference: 'default',
   });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isMobile ? 1.5 : 2));
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(getPixelRatio(isMobile));
+  renderer.setSize(initialWidth, initialHeight, false);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = isDark ? 1.15 : 1.05;
@@ -124,7 +139,7 @@ export function createPcbScrollScene(canvas, options = {}) {
 
   const camera = new THREE.PerspectiveCamera(
     isMobile ? 42 : 38,
-    window.innerWidth / window.innerHeight,
+    initialWidth / initialHeight,
     0.1,
     100
   );
@@ -512,16 +527,16 @@ export function createPcbScrollScene(canvas, options = {}) {
 
   let composer = null;
   let bloom = null;
-  const useComposer = !prefersReducedMotion && !isMobile;
+  const useComposer = !prefersReducedMotion && !isMobile && !lowPowerMode;
 
   if (useComposer) {
     composer = new EffectComposer(renderer);
     composer.addPass(new RenderPass(scene, camera));
     bloom = new UnrealBloomPass(
-      new THREE.Vector2(window.innerWidth, window.innerHeight),
-      0.55,
-      0.35,
-      0.15
+      new THREE.Vector2(initialWidth, initialHeight),
+      0.45,
+      0.3,
+      0.18
     );
     composer.addPass(bloom);
   }
@@ -591,6 +606,16 @@ export function createPcbScrollScene(canvas, options = {}) {
 
   function setScrollTarget(t) {
     smoothScroll.target = THREE.MathUtils.clamp(t, 0, 1);
+    if (prefersReducedMotion) {
+      smoothScroll.current = smoothScroll.target;
+      tick();
+      if (composer) composer.render();
+      else renderer.render(scene, camera);
+    }
+  }
+
+  function isScrollAnimating() {
+    return Math.abs(smoothScroll.target - smoothScroll.current) > 0.001;
   }
 
   function tick() {
@@ -612,15 +637,16 @@ export function createPcbScrollScene(canvas, options = {}) {
   }
 
   function resize() {
-    const w = window.innerWidth;
-    const h = window.innerHeight;
-    camera.aspect = w / h;
+    const { width, height } = getCanvasViewport(canvas);
+    if (width < 2 || height < 2) return;
+
+    camera.aspect = width / height;
     camera.fov = isMobile ? 42 : 38;
     camera.updateProjectionMatrix();
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isMobile ? 1.5 : 2));
-    renderer.setSize(w, h, false);
-    if (composer) composer.setSize(w, h);
-    if (bloom) bloom.resolution.set(w, h);
+    renderer.setPixelRatio(getPixelRatio(isMobile));
+    renderer.setSize(width, height, false);
+    if (composer) composer.setSize(width, height);
+    if (bloom) bloom.resolution.set(width, height);
   }
 
   setPathProgress(0);
@@ -635,5 +661,12 @@ export function createPcbScrollScene(canvas, options = {}) {
     highlightMilestone,
     setPathProgress,
     updateCameraFollowPulse,
+    isScrollAnimating,
+    dispose: () => {
+      renderer.dispose();
+      pathGeometry.dispose();
+      glowOuterGeom.dispose();
+      glowWideGeom.dispose();
+    },
   };
 }
