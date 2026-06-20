@@ -18,6 +18,25 @@ function lerpProgress(scrollProgress: number, rangeStart: number, rangeEnd: numb
   return rangeStart + gsap.utils.clamp(0, 1, scrollProgress) * (rangeEnd - rangeStart);
 }
 
+function getStoryStep(progress: number, totalSteps: number): number {
+  if (totalSteps <= 1) return 0;
+  return Math.min(totalSteps - 1, Math.floor(gsap.utils.clamp(0, 1, progress) * totalSteps));
+}
+
+function getStoryScrollDistance(totalSteps: number, isMobile: boolean): number {
+  return window.innerHeight * totalSteps * (isMobile ? 0.85 : 1);
+}
+
+function restorePinProgress(trigger: ScrollTrigger, progress: number) {
+  const clamped = gsap.utils.clamp(0, 1, progress);
+  const targetScroll = trigger.start + (trigger.end - trigger.start) * clamped;
+  if (Math.abs(window.scrollY - targetScroll) > 1) {
+    window.scrollTo(0, targetScroll);
+  }
+}
+
+const RESIZE_DEBOUNCE_MS = 150;
+
 export function useLandingScroll(
   rootRef: React.RefObject<HTMLElement | null>,
   pcbRef: React.RefObject<PcbScene | null>,
@@ -36,17 +55,23 @@ export function useLandingScroll(
 
     const stepperItems = Array.from(rootRef.current.querySelectorAll(".landing-stepper-item"));
     const storyPanels = Array.from(rootRef.current.querySelectorAll(".landing-story-panel"));
+    const storySteps = stepperItems.length;
 
     const setStoryStep = (step: number) => {
-      stateRef.current.activeStep = step;
+      const clampedStep = gsap.utils.clamp(0, Math.max(storySteps - 1, 0), step);
+      stateRef.current.activeStep = clampedStep;
       stepperItems.forEach((item, index) => {
-        item.classList.toggle("is-active", index === step);
-        item.classList.toggle("is-complete", index < step);
+        item.classList.toggle("is-active", index === clampedStep);
+        item.classList.toggle("is-complete", index < clampedStep);
       });
       storyPanels.forEach((panel, index) => {
-        panel.classList.toggle("is-active", index === step);
+        panel.classList.toggle("is-active", index === clampedStep);
       });
-      pcbRef.current?.highlightMilestone(step);
+      pcbRef.current?.highlightMilestone(clampedStep);
+    };
+
+    const syncStoryStep = (progress: number) => {
+      setStoryStep(getStoryStep(progress, storySteps));
     };
 
     const setScrollTarget = (target: number) => {
@@ -84,25 +109,27 @@ export function useLandingScroll(
     }
 
     const storySection = rootRef.current.querySelector(".landing-story");
-    const storySteps = stepperItems.length;
     const storyPin = rootRef.current.querySelector(".landing-story-pin");
+    let storyTrigger: ScrollTrigger | null = null;
 
-    if (storySection && storyPin) {
-      addTrigger({
+    if (storySection && storyPin && storySteps > 0) {
+      storyTrigger = ScrollTrigger.create({
         trigger: storySection,
         start: "top top",
-        end: () => `+=${window.innerHeight * storySteps * (isMobile() ? 0.85 : 1)}`,
+        end: () => `+=${getStoryScrollDistance(storySteps, isMobile())}`,
         pin: storyPin,
-        pinReparent: true,
         scrub: 0.5,
         anticipatePin: 1,
         invalidateOnRefresh: true,
+        onRefresh: (self) => {
+          syncStoryStep(self.progress);
+        },
         onUpdate: (self) => {
-          const step = Math.min(storySteps - 1, Math.floor(self.progress * storySteps));
-          if (step !== stateRef.current.activeStep) setStoryStep(step);
+          syncStoryStep(self.progress);
           applyPcbProgress(self, PCB_PROGRESS.productsEnd, PCB_PROGRESS.storyEnd);
         },
       });
+      triggers.push(storyTrigger);
     }
 
     const products = rootRef.current.querySelector(".landing-products");
@@ -145,8 +172,27 @@ export function useLandingScroll(
 
     const refreshScroll = () => ScrollTrigger.refresh();
 
+    let resizeTimeoutId = 0;
     const onResize = () => {
-      refreshScroll();
+      clearTimeout(resizeTimeoutId);
+      resizeTimeoutId = window.setTimeout(() => {
+        const savedStoryProgress =
+          storyTrigger &&
+          window.scrollY >= storyTrigger.start &&
+          window.scrollY <= storyTrigger.end
+            ? storyTrigger.progress
+            : null;
+
+        ScrollTrigger.refresh();
+
+        if (storyTrigger && savedStoryProgress !== null) {
+          restorePinProgress(storyTrigger, savedStoryProgress);
+          ScrollTrigger.refresh();
+          syncStoryStep(storyTrigger.progress);
+        } else if (storyTrigger) {
+          syncStoryStep(storyTrigger.progress);
+        }
+      }, RESIZE_DEBOUNCE_MS);
     };
 
     window.addEventListener("resize", onResize);
@@ -157,6 +203,7 @@ export function useLandingScroll(
 
     return () => {
       window.clearTimeout(refreshTimeoutId);
+      window.clearTimeout(resizeTimeoutId);
       window.removeEventListener("resize", onResize);
       mobileQuery.removeEventListener("change", onResize);
       triggers.forEach((trigger) => trigger.kill());
