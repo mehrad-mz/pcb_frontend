@@ -3,7 +3,6 @@
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { PERSIAN_DIGITS } from "@/lib/landing-data";
 import type { PcbScene } from "./usePcbScene";
 
 /** PCB trace progress bands across page sections (order matches DOM). */
@@ -11,8 +10,7 @@ const PCB_PROGRESS = {
   heroEnd: 0.06,
   productsEnd: 0.14,
   storyEnd: 0.38,
-  featuresEnd: 0.48,
-  orderEnd: 0.78,
+  featuresEnd: 0.55,
   pageEnd: 1,
 } as const;
 
@@ -25,7 +23,7 @@ export function useLandingScroll(
   pcbRef: React.RefObject<PcbScene | null>,
   enabled: boolean,
 ) {
-  const stateRef = useRef({ activeStep: 0, scrollTarget: 0, orderStep: -1 });
+  const stateRef = useRef({ activeStep: 0, scrollTarget: 0 });
 
   useEffect(() => {
     if (!enabled || !rootRef.current || !pcbRef.current) return;
@@ -38,19 +36,6 @@ export function useLandingScroll(
 
     const stepperItems = Array.from(rootRef.current.querySelectorAll(".landing-stepper-item"));
     const storyPanels = Array.from(rootRef.current.querySelectorAll(".landing-story-panel"));
-    const orderSteps = Array.from(rootRef.current.querySelectorAll(".landing-order-step"));
-
-    const setOrderStep = (step: number) => {
-      if (step === stateRef.current.orderStep) return;
-      stateRef.current.orderStep = step;
-      orderSteps.forEach((item, index) => {
-        const el = item as HTMLElement;
-        const numEl = el.querySelector(".landing-order-num");
-        el.classList.toggle("is-active", index === step);
-        el.classList.toggle("is-done", index < step);
-        if (numEl) numEl.textContent = index < step ? "✓" : PERSIAN_DIGITS[index];
-      });
-    };
 
     const setStoryStep = (step: number) => {
       stateRef.current.activeStep = step;
@@ -82,7 +67,6 @@ export function useLandingScroll(
     };
 
     setStoryStep(0);
-    setOrderStep(0);
     setScrollTarget(prefersReducedMotion ? 0.35 : 0);
 
     const landingScroll = rootRef.current.querySelector(".landing-scroll");
@@ -145,38 +129,16 @@ export function useLandingScroll(
       });
     }
 
-    const orderSection = rootRef.current.querySelector(".landing-order-stages");
-    const orderPin = rootRef.current.querySelector(".landing-order-pin");
-
-    if (orderSection && orderPin && orderSteps.length) {
-      const totalSteps = orderSteps.length;
+    const cta = rootRef.current.querySelector(".landing-cta");
+    if (cta && landingScroll) {
       addTrigger({
-        trigger: orderSection,
-        start: "top top",
-        end: () => `+=${window.innerHeight * totalSteps * (isMobile() ? 0.65 : 0.85)}`,
-        pin: orderPin,
-        pinReparent: true,
-        scrub: 0.45,
-        anticipatePin: 1,
-        invalidateOnRefresh: true,
-        onUpdate: (self) => {
-          const step = Math.min(totalSteps - 1, Math.floor(self.progress * totalSteps));
-          setOrderStep(step);
-          applyPcbProgress(self, PCB_PROGRESS.featuresEnd, PCB_PROGRESS.orderEnd);
-        },
-      });
-    }
-
-    const pricing = rootRef.current.querySelector(".landing-pricing");
-    if (pricing && landingScroll) {
-      addTrigger({
-        trigger: pricing,
+        trigger: cta,
         start: "top 85%",
         endTrigger: landingScroll,
         end: "bottom bottom",
         scrub: 0.65,
         invalidateOnRefresh: true,
-        onUpdate: (self) => applyPcbProgress(self, PCB_PROGRESS.orderEnd, PCB_PROGRESS.pageEnd),
+        onUpdate: (self) => applyPcbProgress(self, PCB_PROGRESS.featuresEnd, PCB_PROGRESS.pageEnd),
         onLeave: () => setScrollTarget(PCB_PROGRESS.pageEnd),
       });
     }

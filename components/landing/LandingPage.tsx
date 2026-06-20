@@ -11,9 +11,6 @@ import {
   DJANGO_ROUTES,
   FEATURE_CARDS,
   NAV_LINKS,
-  ORDER_STEPS,
-  PERSIAN_DIGITS,
-  PRICING_CARDS,
   STORY_STEP_LABELS,
   STORY_STEPS,
 } from "@/lib/landing-data";
@@ -174,73 +171,6 @@ export default function LandingPage() {
                   <p>{feature.description}</p>
                 </article>
               ))}
-            </div>
-          </section>
-
-          <section className="landing-order-stages" id="order-stages">
-            <div className="landing-order-pin">
-              <div className="landing-order-stages-inner">
-                <div className="landing-section-head landing-order-head">
-                  <p className="landing-eyebrow">پیگیری سفارش</p>
-                  <h2>مراحل سفارش شما</h2>
-                  <p className="landing-order-hint">اسکرول کنید تا مراحل را ببینید</p>
-                </div>
-                <div className="landing-order-stepper-wrap">
-                  <ol className="landing-order-track" id="landing-order-track" aria-label="مراحل سفارش">
-                    {ORDER_STEPS.map((label, index) => (
-                      <li
-                        key={label}
-                        className={`landing-order-step${index === 0 ? " is-active" : ""}`}
-                        data-step={index}
-                      >
-                        <div className="landing-order-marker">
-                          <span className="landing-order-num">{PERSIAN_DIGITS[index]}</span>
-                          {index < ORDER_STEPS.length - 1 ? (
-                            <span className="landing-order-segment" aria-hidden="true" />
-                          ) : null}
-                        </div>
-                        <span className="landing-order-label">{label}</span>
-                      </li>
-                    ))}
-                  </ol>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <section className="landing-pricing" id="pricing">
-            <div className="landing-pricing-inner">
-              <div className="landing-pricing-copy">
-                <p className="landing-eyebrow">قیمت‌گذاری ساده</p>
-                <h2>
-                  از ۲ دلار شروع کن.
-                  <br />
-                  تا تولید انبوه.
-                </h2>
-                <p>۵ برد، استعلام فوری و تخفیف حجمی.</p>
-                <a href={DJANGO_ROUTES.newOrder} className="landing-btn landing-btn-primary landing-btn-lg">
-                  استعلام فوری
-                </a>
-              </div>
-              <div className="landing-pricing-cards" id="landing-pricing-cards">
-                {PRICING_CARDS.map((card) => (
-                  <article
-                    key={card.title}
-                    className={`landing-price-card${card.featured ? " landing-price-card--featured" : ""}`}
-                  >
-                    <span className="landing-price-tag">{card.tag}</span>
-                    <h3>{card.title}</h3>
-                    <p className="landing-price">
-                      از <strong>{card.price}</strong>
-                    </p>
-                    <ul>
-                      {card.items.map((item) => (
-                        <li key={item}>{item}</li>
-                      ))}
-                    </ul>
-                  </article>
-                ))}
-              </div>
             </div>
           </section>
 

@@ -68,15 +68,11 @@ export const FEATURE_CARDS: FeatureCard[] = [
   },
 ];
 
-export const ORDER_STEPS = [
-  "ثبت سفارش",
-  "پرس‌فایل",
-  "تایید مشتری",
-  "بیش‌افزاری",
-  "پرداخت",
-  "در حال ساخت",
-  "تحویل شده",
-];
+export const NAV_LINKS = [
+  { href: "#products", label: "محصولات" },
+  { href: "#process", label: "فرآیند" },
+  { href: "#capabilities", label: "قابلیت‌ها" },
+] as const;
 
 export type ProductSummary = {
   id: string;
@@ -108,35 +104,3 @@ export const LANDING_PRODUCTS: ProductSummary[] = [
     imageAlt: "استencil SMT با برش لیزری دقیق",
   },
 ];
-
-export type PricingCard = {
-  tag: string;
-  title: string;
-  price: string;
-  featured?: boolean;
-  items: string[];
-};
-
-export const PRICING_CARDS: PricingCard[] = [
-  {
-    tag: "نمونه",
-    title: "۱–۴ لایه",
-    price: "$2",
-    items: ["برد ۱۰۰×۱۰۰ میلی‌متر", "ساخت ۲۴ ساعته", "FR4، آلومینیوم، Rogers"],
-  },
-  {
-    tag: "پیشرفته",
-    title: "۶–۳۲ لایه",
-    price: "$2",
-    featured: true,
-    items: ["برد ۵۰×۵۰ میلی‌متر", "ساخت ۴ روزه", "via-in-pad POFV رایگان"],
-  },
-];
-
-export const NAV_LINKS = [
-  { href: "#products", label: "محصولات" },
-  { href: "#process", label: "فرآیند" },
-  { href: "#capabilities", label: "قابلیت‌ها" },
-  { href: "#order-stages", label: "مراحل سفارش" },
-  { href: "#pricing", label: "قیمت‌گذاری" },
-] as const;
