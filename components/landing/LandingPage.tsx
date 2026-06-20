@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useRef, useState } from "react";
+import LandingProductsShowcase from "./LandingProductsShowcase";
 import LandingSceneLoader from "./LandingSceneLoader";
 import LandingSeoContent from "./LandingSeoContent";
 import { useLandingScroll } from "./useLandingScroll";
@@ -9,7 +10,6 @@ import { usePcbScene } from "./usePcbScene";
 import {
   DJANGO_ROUTES,
   FEATURE_CARDS,
-  LANDING_PRODUCT_SUMMARIES,
   NAV_LINKS,
   ORDER_STEPS,
   PERSIAN_DIGITS,
@@ -118,6 +118,8 @@ export default function LandingPage() {
             </div>
           </section>
 
+          <LandingProductsShowcase />
+
           <section className="landing-story" id="process">
             <div className="landing-story-pin">
               <div className="landing-story-ui">
@@ -203,33 +205,6 @@ export default function LandingPage() {
                   </ol>
                 </div>
               </div>
-            </div>
-          </section>
-
-          <section className="landing-products" id="products">
-            <div className="landing-section-head">
-              <p className="landing-eyebrow">راهکارهای یکپارچه</p>
-              <h2>محصولات و خدمات PCB</h2>
-            </div>
-            <div className="landing-product-grid">
-              {LANDING_PRODUCT_SUMMARIES.map((product) => (
-                <article key={product.id} className="landing-product-card">
-                  <h3>{product.title}</h3>
-                  <ul className="landing-product-card-features">
-                    {product.features.map((feature) => (
-                      <li key={feature}>{feature}</li>
-                    ))}
-                  </ul>
-                  <p
-                    className="landing-product-card-price"
-                    dangerouslySetInnerHTML={{ __html: product.priceHtml }}
-                  />
-                  <p className="landing-product-card-lead">{product.leadTime}</p>
-                  <a href={DJANGO_ROUTES.newOrder} className="landing-btn landing-btn-primary landing-product-card-cta">
-                    استعلام فوری
-                  </a>
-                </article>
-              ))}
             </div>
           </section>
 

@@ -648,7 +648,7 @@ body {
 
 /* ─── Product showcase ───────────────────────────── */
 .landing-products {
-  padding: clamp(4rem, 10vw, 8rem) clamp(1.25rem, 4vw, 4rem);
+  padding: clamp(2.5rem, 6vw, 5rem) clamp(1.25rem, 4vw, 4rem);
 }
 
 .landing-products-showcase {
@@ -728,7 +728,10 @@ body {
 
 .landing-product-features {
   margin: 0 0 1.25rem;
-  padding-inline-start: 1.1rem;
+  padding: 1rem 1.1rem 1rem 1.25rem;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(168, 240, 216, 0.08);
   color: var(--landing-muted);
   line-height: 1.8;
   font-size: 0.9375rem;

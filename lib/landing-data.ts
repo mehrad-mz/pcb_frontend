@@ -84,50 +84,31 @@ export type ProductSummary = {
   priceHtml: string;
   leadTime: string;
   features: string[];
+  imageSrc: string;
+  imageAlt: string;
+  serviceLabel: string;
 };
 
-export const LANDING_PRODUCT_SUMMARIES: ProductSummary[] = [
+export const LANDING_PRODUCTS: ProductSummary[] = [
   {
     id: "fr4",
     title: "برد FR-4",
-    priceHtml: "از $2.00 / ۵ عدد",
+    priceHtml: "از <strong>$2.00</strong> / ۵ عدد",
     leadTime: "زمان ساخت: ۲۴ ساعت",
     features: ["۱ تا ۳۲ لایه", "POFV رایگان برای ۶+ لایه", "کنترل امپدانس ±۱۰٪"],
-  },
-  {
-    id: "flex",
-    title: "برد Flexible",
-    priceHtml: "از $5.00 / ۵ عدد",
-    leadTime: "زمان ساخت: ۳ روز",
-    features: ["انعطاف‌پذیر و قابل تا شدن", "مناسب فضاهای محدود", "مونتاژ PCBA پشتیبانی می‌شود"],
-  },
-  {
-    id: "mcpcb",
-    title: "برد Metal Core",
-    priceHtml: "از $39.00 / ۵ عدد",
-    leadTime: "زمان ساخت: ۴ روز",
-    features: ["انتقال حرارت عالی", "مناسب LED و درایور", "آلومینیوم یا مس"],
-  },
-  {
-    id: "hf",
-    title: "برد فرکانس بالا",
-    priceHtml: "استعلام سفارشی",
-    leadTime: "زمان ساخت: ۵–۷ روز",
-    features: ["Rogers، PTFE و مواد RF", "امپدانس دقیق", "مناسب 5G و RF"],
-  },
-  {
-    id: "pcba",
-    title: "مونتاژ PCB (PCBA)",
-    priceHtml: "از $8.00 / ۵ عدد",
-    leadTime: "زمان ساخت: ۲۴–۴۸ ساعت",
-    features: ["مونتاژ SMT و THT", "تأمین قطعات از BOM", "بازرسی AOI"],
+    imageSrc: "/products/fr4-pcb.svg",
+    imageAlt: "نمونه برد FR-4 با مسیرهای طلایی",
+    serviceLabel: "خدمات برد FR-4",
   },
   {
     id: "stencil",
     title: "Stencil SMT",
-    priceHtml: "از $3.00",
-    leadTime: "زمان ساخت: ۲۴ ساعت",
-    features: ["استencil فولاد", "برش لیزری دقیق", "نانو-coating با کوپن"],
+    priceHtml: "از <strong>$3.00</strong>",
+    leadTime: "زمان ساخت: ۱۲–۴۸ ساعت",
+    features: ["فولاد ضدزنگ ۳۰۴ HTA", "دقت برش لیزری ±۰.۰۰۳ میلی‌متر", "الکتروپولیش و نانو-coating"],
+    imageSrc: "/products/smt-stencil.svg",
+    imageAlt: "استencil SMT با برش لیزری دقیق",
+    serviceLabel: "خدمات Stencil SMT",
   },
 ];
 
@@ -156,9 +137,9 @@ export const PRICING_CARDS: PricingCard[] = [
 ];
 
 export const NAV_LINKS = [
+  { href: "#products", label: "محصولات" },
   { href: "#process", label: "فرآیند" },
   { href: "#capabilities", label: "قابلیت‌ها" },
   { href: "#order-stages", label: "مراحل سفارش" },
-  { href: "#products", label: "محصولات" },
   { href: "#pricing", label: "قیمت‌گذاری" },
 ] as const;

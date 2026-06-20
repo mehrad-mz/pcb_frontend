@@ -8,11 +8,11 @@ import type { PcbScene } from "./usePcbScene";
 
 /** PCB trace progress bands across page sections (order matches DOM). */
 const PCB_PROGRESS = {
-  heroEnd: 0.08,
+  heroEnd: 0.06,
+  productsEnd: 0.14,
   storyEnd: 0.38,
   featuresEnd: 0.48,
   orderEnd: 0.78,
-  productsEnd: 0.9,
   pageEnd: 1,
 } as const;
 
@@ -116,8 +116,20 @@ export function useLandingScroll(
         onUpdate: (self) => {
           const step = Math.min(storySteps - 1, Math.floor(self.progress * storySteps));
           if (step !== stateRef.current.activeStep) setStoryStep(step);
-          applyPcbProgress(self, PCB_PROGRESS.heroEnd, PCB_PROGRESS.storyEnd);
+          applyPcbProgress(self, PCB_PROGRESS.productsEnd, PCB_PROGRESS.storyEnd);
         },
+      });
+    }
+
+    const products = rootRef.current.querySelector(".landing-products");
+    if (products) {
+      addTrigger({
+        trigger: products,
+        start: "top 90%",
+        end: "bottom 60%",
+        scrub: 0.65,
+        invalidateOnRefresh: true,
+        onUpdate: (self) => applyPcbProgress(self, PCB_PROGRESS.heroEnd, PCB_PROGRESS.productsEnd),
       });
     }
 
@@ -155,18 +167,6 @@ export function useLandingScroll(
       });
     }
 
-    const products = rootRef.current.querySelector(".landing-products");
-    if (products) {
-      addTrigger({
-        trigger: products,
-        start: "top 85%",
-        end: "bottom 25%",
-        scrub: 0.65,
-        invalidateOnRefresh: true,
-        onUpdate: (self) => applyPcbProgress(self, PCB_PROGRESS.orderEnd, PCB_PROGRESS.productsEnd),
-      });
-    }
-
     const pricing = rootRef.current.querySelector(".landing-pricing");
     if (pricing && landingScroll) {
       addTrigger({
@@ -176,7 +176,7 @@ export function useLandingScroll(
         end: "bottom bottom",
         scrub: 0.65,
         invalidateOnRefresh: true,
-        onUpdate: (self) => applyPcbProgress(self, PCB_PROGRESS.productsEnd, PCB_PROGRESS.pageEnd),
+        onUpdate: (self) => applyPcbProgress(self, PCB_PROGRESS.orderEnd, PCB_PROGRESS.pageEnd),
         onLeave: () => setScrollTarget(PCB_PROGRESS.pageEnd),
       });
     }
