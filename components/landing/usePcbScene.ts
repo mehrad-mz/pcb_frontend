@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { debugGpuLog } from "@/lib/debug-gpu-log";
 import type { createPcbScrollScene } from "@/lib/pcb-scroll-scene";
 
 export type PcbScene = ReturnType<typeof createPcbScrollScene>;
@@ -62,6 +63,27 @@ export function usePcbScene(
     const isMobile = () => mobileQuery.matches;
     const lowPowerMode = detectLowPowerMode();
 
+    // #region agent log
+    debugGpuLog({
+      location: "usePcbScene.ts:init",
+      message: "Device capability snapshot",
+      hypothesisId: "B",
+      data: {
+        lowPowerMode,
+        isMobile: isMobile(),
+        prefersReducedMotion,
+        hardwareConcurrency: navigator.hardwareConcurrency,
+        deviceMemory: (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? null,
+        devicePixelRatio: window.devicePixelRatio,
+        userAgent: navigator.userAgent,
+        platform: navigator.platform,
+      },
+    });
+    // #endregion
+
+    let renderCount = 0;
+    let lastStatsAt = performance.now();
+
     const applyResize = () => {
       pcbRef.current?.resize();
       pcbRef.current?.render();
@@ -85,7 +107,48 @@ export function usePcbScene(
       if (now - lastFrameTime < frameInterval) return;
 
       lastFrameTime = now;
-      scene.render();
+      renderCount += 1;
+      const renderStarted = performance.now();
+      try {
+        scene.render();
+      } catch (error) {
+        // #region agent log
+        debugGpuLog({
+          location: "usePcbScene.ts:animate",
+          message: "Render threw error",
+          hypothesisId: "D",
+          data: {
+            error: error instanceof Error ? error.message : String(error),
+            renderCount,
+            isScrollAnimating: scene.isScrollAnimating?.() ?? null,
+          },
+        });
+        // #endregion
+      }
+      const renderMs = performance.now() - renderStarted;
+
+      const statsElapsed = now - lastStatsAt;
+      if (statsElapsed >= 5000) {
+        const sceneStats = scene.getDebugStats?.() ?? {};
+        // #region agent log
+        debugGpuLog({
+          location: "usePcbScene.ts:animate",
+          message: "5s render stats",
+          hypothesisId: "A",
+          data: {
+            rendersPer5s: renderCount,
+            estimatedFps: (renderCount / statsElapsed) * 1000,
+            isScrollAnimating: scene.isScrollAnimating?.() ?? null,
+            targetFps: isActive ? ACTIVE_FPS : IDLE_FPS,
+            lastRenderMs: renderMs,
+            animating,
+            ...sceneStats,
+          },
+        });
+        // #endregion
+        renderCount = 0;
+        lastStatsAt = now;
+      }
     };
 
     const startAnimation = () => {
@@ -169,6 +232,16 @@ export function usePcbScene(
       })
       .catch((error) => {
         console.error("Landing 3D init failed:", error);
+        // #region agent log
+        debugGpuLog({
+          location: "usePcbScene.ts:init-failed",
+          message: "WebGL scene init failed",
+          hypothesisId: "D",
+          data: {
+            error: error instanceof Error ? error.message : String(error),
+          },
+        });
+        // #endregion
         finishLoading();
       });
 

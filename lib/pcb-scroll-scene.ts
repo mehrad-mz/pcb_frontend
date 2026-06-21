@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { debugGpuLog } from '@/lib/debug-gpu-log';
 
 const TRACE_Y = 0.09;
 const TRACE_SURFACE_Y = TRACE_Y + 0.022;
@@ -541,6 +542,62 @@ export function createPcbScrollScene(canvas, options = {}) {
     composer.addPass(bloom);
   }
 
+  const gl = renderer.getContext();
+  let gpuRenderer = "unknown";
+  try {
+    const debugInfo = gl.getExtension("WEBGL_debug_renderer_info");
+    if (debugInfo) {
+      gpuRenderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+    }
+  } catch {
+    gpuRenderer = "unavailable";
+  }
+
+  const drawBufferWidth = gl.drawingBufferWidth;
+  const drawBufferHeight = gl.drawingBufferHeight;
+  const pixelRatio = renderer.getPixelRatio();
+
+  // #region agent log
+  debugGpuLog({
+    location: "pcb-scroll-scene.ts:create",
+    message: "WebGL scene initialized",
+    hypothesisId: "B",
+    data: {
+      useComposer,
+      bloomEnabled: Boolean(bloom),
+      antialias: !lowPowerMode && !isMobile,
+      lowPowerMode,
+      isMobile,
+      prefersReducedMotion,
+      pixelRatio,
+      cssSize: { width: initialWidth, height: initialHeight },
+      drawBuffer: { width: drawBufferWidth, height: drawBufferHeight },
+      totalPixels: drawBufferWidth * drawBufferHeight,
+      gpuRenderer,
+    },
+  });
+  // #endregion
+
+  canvas.addEventListener("webglcontextlost", (event) => {
+    event.preventDefault();
+    // #region agent log
+    debugGpuLog({
+      location: "pcb-scroll-scene.ts:webglcontextlost",
+      message: "WebGL context lost",
+      hypothesisId: "D",
+      data: {
+        drawBuffer: { width: drawBufferWidth, height: drawBufferHeight },
+        useComposer,
+        gpuRenderer,
+      },
+    });
+    // #endregion
+  });
+
+  let slowFrameCount = 0;
+  let totalRenderMs = 0;
+  let totalRenderCount = 0;
+
   const CAM_OFFSET = new THREE.Vector3(
     isMobile ? 2.6 : 3.2,
     isMobile ? 4.8 : 5.5,
@@ -631,9 +688,55 @@ export function createPcbScrollScene(canvas, options = {}) {
   }
 
   function render() {
+    const started = performance.now();
     tick();
     if (composer) composer.render();
     else renderer.render(scene, camera);
+    const elapsed = performance.now() - started;
+    totalRenderMs += elapsed;
+    totalRenderCount += 1;
+    if (elapsed > 16) {
+      slowFrameCount += 1;
+      if (slowFrameCount <= 5 || slowFrameCount % 20 === 0) {
+        // #region agent log
+        debugGpuLog({
+          location: "pcb-scroll-scene.ts:render",
+          message: "Slow WebGL frame",
+          hypothesisId: "E",
+          data: {
+            renderMs: Math.round(elapsed * 100) / 100,
+            slowFrameCount,
+            useComposer,
+            drawBuffer: {
+              width: renderer.getContext().drawingBufferWidth,
+              height: renderer.getContext().drawingBufferHeight,
+            },
+            isScrollAnimating: isScrollAnimating(),
+          },
+        });
+        // #endregion
+      }
+    }
+  }
+
+  function getDebugStats() {
+    const avgRenderMs =
+      totalRenderCount > 0 ? Math.round((totalRenderMs / totalRenderCount) * 100) / 100 : 0;
+    const stats = {
+      avgRenderMs,
+      slowFrameCount,
+      totalRenderCount,
+      useComposer,
+      pixelRatio: renderer.getPixelRatio(),
+      drawBuffer: {
+        width: renderer.getContext().drawingBufferWidth,
+        height: renderer.getContext().drawingBufferHeight,
+      },
+    };
+    totalRenderMs = 0;
+    totalRenderCount = 0;
+    slowFrameCount = 0;
+    return stats;
   }
 
   function resize() {
@@ -662,6 +765,7 @@ export function createPcbScrollScene(canvas, options = {}) {
     setPathProgress,
     updateCameraFollowPulse,
     isScrollAnimating,
+    getDebugStats,
     dispose: () => {
       renderer.dispose();
       pathGeometry.dispose();
