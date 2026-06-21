@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { detectSceneQuality } from "@/lib/pcb-scene-quality";
 import type { createPcbScrollScene } from "@/lib/pcb-scroll-scene";
 
 export type PcbScene = ReturnType<typeof createPcbScrollScene>;
 
 const SCENE_LOAD_TIMEOUT_MS = 12_000;
 const RESIZE_DEBOUNCE_MS = 120;
+const IDLE_FPS = 30;
 const ACTIVE_FPS = 60;
 
 function signalSceneReady(onReady: () => void) {
@@ -16,13 +16,14 @@ function signalSceneReady(onReady: () => void) {
   });
 }
 
-function shouldRunAnimationLoop() {
-  return !document.hidden && document.hasFocus();
+function detectLowPowerMode() {
+  const cores = navigator.hardwareConcurrency ?? 8;
+  const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
+  return cores <= 4 || (typeof memory === "number" && memory <= 4);
 }
 
-function enableStaticFallback(shell: HTMLElement, canvas: HTMLCanvasElement) {
-  canvas.classList.add("is-hidden");
-  shell.classList.add("landing-shell--static-fallback");
+function shouldRunAnimationLoop() {
+  return !document.hidden && document.hasFocus();
 }
 
 export function usePcbScene(
@@ -59,6 +60,7 @@ export function usePcbScene(
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const mobileQuery = window.matchMedia("(max-width: 767px)");
     const isMobile = () => mobileQuery.matches;
+    const lowPowerMode = detectLowPowerMode();
 
     const applyResize = () => {
       pcbRef.current?.resize();
@@ -70,29 +72,16 @@ export function usePcbScene(
       resizeTimeoutId = window.setTimeout(applyResize, RESIZE_DEBOUNCE_MS);
     };
 
-    const stopAnimation = () => {
-      animating = false;
-      cancelAnimationFrame(rafRef.current);
-    };
-
     const animate = (now: number) => {
       rafRef.current = requestAnimationFrame(animate);
-
       if (!shouldRunAnimationLoop()) return;
 
       const scene = pcbRef.current;
-      if (!scene) {
-        stopAnimation();
-        return;
-      }
+      if (!scene) return;
 
-      if (!scene.isAnimating()) {
-        scene.render();
-        stopAnimation();
-        return;
-      }
-
-      const frameInterval = 1000 / ACTIVE_FPS;
+      const isActive = scene.isScrollAnimating?.() ?? false;
+      const targetFps = isActive ? ACTIVE_FPS : IDLE_FPS;
+      const frameInterval = 1000 / targetFps;
       if (now - lastFrameTime < frameInterval) return;
 
       lastFrameTime = now;
@@ -107,15 +96,9 @@ export function usePcbScene(
       rafRef.current = requestAnimationFrame(animate);
     };
 
-    const requestSceneFrame = () => {
-      const scene = pcbRef.current;
-      if (!scene) return;
-
-      scene.render();
-
-      if (!prefersReducedMotion && scene.isAnimating() && shouldRunAnimationLoop()) {
-        startAnimation();
-      }
+    const stopAnimation = () => {
+      animating = false;
+      cancelAnimationFrame(rafRef.current);
     };
 
     const syncAnimationState = () => {
@@ -123,9 +106,7 @@ export function usePcbScene(
 
       if (shouldRunAnimationLoop()) {
         applyResize();
-        if (pcbRef.current?.isAnimating()) {
-          startAnimation();
-        }
+        startAnimation();
       } else {
         stopAnimation();
       }
@@ -152,40 +133,24 @@ export function usePcbScene(
       scheduleResize();
     };
 
-    const onContextLost = (event: Event) => {
-      event.preventDefault();
-      stopAnimation();
-      enableStaticFallback(shell, canvas);
-      pcbRef.current?.dispose?.();
-      pcbRef.current = null;
-    };
-
-    canvas.addEventListener("webglcontextlost", onContextLost);
-
     loadTimeoutId = window.setTimeout(finishLoading, SCENE_LOAD_TIMEOUT_MS);
 
     import("@/lib/pcb-scroll-scene")
       .then(({ createPcbScrollScene }) => {
         if (cancelled) return;
 
-        const quality = detectSceneQuality(isMobile());
-
-        try {
-          pcbRef.current = createPcbScrollScene(canvas, {
-            prefersReducedMotion,
-            isMobile: isMobile(),
-            quality,
-            theme: "dark",
-            onNeedsFrame: requestSceneFrame,
-          });
-        } catch (error) {
-          console.error("Landing 3D init failed:", error);
-          enableStaticFallback(shell, canvas);
-          signalSceneReady(finishLoading);
-          return;
-        }
+        pcbRef.current = createPcbScrollScene(canvas, {
+          prefersReducedMotion,
+          isMobile: isMobile(),
+          lowPowerMode,
+          theme: "dark",
+        });
 
         pcbRef.current.render();
+
+        if (!prefersReducedMotion && shouldRunAnimationLoop()) {
+          startAnimation();
+        }
 
         window.addEventListener("resize", scheduleResize);
         window.addEventListener("focus", onWindowFocus);
@@ -203,8 +168,7 @@ export function usePcbScene(
         signalSceneReady(finishLoading);
       })
       .catch((error) => {
-        console.error("Landing 3D module failed:", error);
-        enableStaticFallback(shell, canvas);
+        console.error("Landing 3D init failed:", error);
         finishLoading();
       });
 
@@ -214,7 +178,6 @@ export function usePcbScene(
       clearTimeout(resizeTimeoutId);
       stopAnimation();
       resizeObserver?.disconnect();
-      canvas.removeEventListener("webglcontextlost", onContextLost);
 
       if (listenersAttached) {
         window.removeEventListener("resize", scheduleResize);
