@@ -9,7 +9,7 @@ export type PcbScene = ReturnType<typeof createPcbScrollScene>;
 const SCENE_LOAD_TIMEOUT_MS = 12_000;
 const RESIZE_DEBOUNCE_MS = 120;
 const HIGH_POWER_FPS = 60;
-const LOW_POWER_FPS = 30;
+const LOW_POWER_FPS = 20;
 const STATS_INTERVAL_MS = 5000;
 
 function signalSceneReady(onReady: () => void) {
@@ -147,7 +147,7 @@ export function usePcbScene(
         location: "usePcbScene.ts:stats",
         message: "5s render stats",
         hypothesisId: "A",
-        runId: "post-fix-v2",
+        runId: "post-fix-v3",
         data: {
           rendersPer5s: renderCount,
           rafTicksPer5s: rafTickCount,
@@ -168,15 +168,17 @@ export function usePcbScene(
       lastStatsAt = now;
     };
 
-    const ensureAnimationLoop = () => {
+    const scheduleAnimationLoop = () => {
       if (prefersReducedMotion || !shouldRunAnimationLoop()) return;
-      if (!animating) {
-        startAnimation();
-        return;
-      }
+      animating = true;
       if (!rafRef.current) {
+        lastFrameTime = 0;
         rafRef.current = requestAnimationFrame(animate);
       }
+    };
+
+    const ensureAnimationLoop = () => {
+      scheduleAnimationLoop();
     };
 
     const applyResize = () => {
@@ -192,54 +194,59 @@ export function usePcbScene(
 
     const animate = (now: number) => {
       rafRef.current = 0;
-      if (!shouldRunAnimationLoop()) return;
+      if (!shouldRunAnimationLoop()) {
+        animating = false;
+        return;
+      }
 
       const scene = pcbRef.current;
-      if (!scene) return;
+      if (!scene) {
+        animating = false;
+        return;
+      }
 
       rafTickCount += 1;
-      logStats(now);
 
       const isActive = scene.isScrollAnimating?.() ?? false;
       if (!isActive) {
         animating = false;
+        logStats(now);
         return;
       }
 
       rafRef.current = requestAnimationFrame(animate);
 
       const frameInterval = 1000 / targetFps;
-      if (now - lastFrameTime < frameInterval) return;
-
-      lastFrameTime = now;
-      renderCount += 1;
-      const renderStarted = performance.now();
-      try {
-        scene.render();
-      } catch (error) {
-        // #region agent log
-        debugGpuLog({
-          location: "usePcbScene.ts:animate",
-          message: "Render threw error",
-          hypothesisId: "D",
-          data: {
-            error: error instanceof Error ? error.message : String(error),
-            renderCount,
-            isScrollAnimating: scene.isScrollAnimating?.() ?? null,
-          },
-        });
-        // #endregion
+      if (now - lastFrameTime >= frameInterval) {
+        lastFrameTime = now;
+        renderCount += 1;
+        const renderStarted = performance.now();
+        try {
+          scene.render();
+        } catch (error) {
+          // #region agent log
+          debugGpuLog({
+            location: "usePcbScene.ts:animate",
+            message: "Render threw error",
+            hypothesisId: "D",
+            data: {
+              error: error instanceof Error ? error.message : String(error),
+              renderCount,
+              isScrollAnimating: scene.isScrollAnimating?.() ?? null,
+            },
+          });
+          // #endregion
+        }
+        const renderMs = performance.now() - renderStarted;
+        logStats(now, { lastRenderMs: renderMs });
+      } else {
+        scene.advanceScroll?.();
+        logStats(now);
       }
-      const renderMs = performance.now() - renderStarted;
-      logStats(now, { lastRenderMs: renderMs });
     };
 
     const startAnimation = () => {
-      if (prefersReducedMotion || animating) return;
-      animating = true;
-      lastFrameTime = 0;
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = requestAnimationFrame(animate);
+      scheduleAnimationLoop();
     };
 
     const stopAnimation = () => {
@@ -301,6 +308,9 @@ export function usePcbScene(
         pcbRef.current.render();
 
         statsIntervalId = window.setInterval(() => {
+          if (pcbRef.current?.isScrollAnimating?.()) {
+            ensureAnimationLoop();
+          }
           logStats(performance.now());
         }, STATS_INTERVAL_MS);
 

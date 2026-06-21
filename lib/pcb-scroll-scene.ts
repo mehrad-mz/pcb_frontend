@@ -96,9 +96,14 @@ function getCanvasViewport(canvas) {
   };
 }
 
-function getPixelRatio(isMobile, lowPowerMode) {
-  if (lowPowerMode) return 1;
-  return Math.min(window.devicePixelRatio || 1, isMobile ? 1.25 : 1.5);
+const LOW_POWER_MAX_PIXELS = 480_000;
+
+function getPixelRatio(isMobile, lowPowerMode, width, height) {
+  if (!lowPowerMode) {
+    return Math.min(window.devicePixelRatio || 1, isMobile ? 1.25 : 1.5);
+  }
+  const cssPixels = Math.max(1, width) * Math.max(1, height);
+  return Math.min(1, Math.sqrt(LOW_POWER_MAX_PIXELS / cssPixels));
 }
 
 /**
@@ -122,7 +127,7 @@ export function createPcbScrollScene(canvas, options = {}) {
     alpha: isDark,
     powerPreference: lowPowerMode ? 'low-power' : 'default',
   });
-  renderer.setPixelRatio(getPixelRatio(isMobile, lowPowerMode));
+  renderer.setPixelRatio(getPixelRatio(isMobile, lowPowerMode, initialWidth, initialHeight));
   renderer.setSize(initialWidth, initialHeight, false);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -578,6 +583,7 @@ export function createPcbScrollScene(canvas, options = {}) {
       cssSize: { width: initialWidth, height: initialHeight },
       drawBuffer: { width: drawBufferWidth, height: drawBufferHeight },
       totalPixels: drawBufferWidth * drawBufferHeight,
+      maxPixelBudget: lowPowerMode ? LOW_POWER_MAX_PIXELS : null,
       gpuRenderer,
     },
   });
@@ -709,6 +715,7 @@ export function createPcbScrollScene(canvas, options = {}) {
           location: "pcb-scroll-scene.ts:render",
           message: "Slow WebGL frame",
           hypothesisId: "E",
+          runId: "post-fix-v3",
           data: {
             renderMs: Math.round(elapsed * 100) / 100,
             slowFrameCount,
@@ -723,6 +730,10 @@ export function createPcbScrollScene(canvas, options = {}) {
         // #endregion
       }
     }
+  }
+
+  function advanceScroll() {
+    tick();
   }
 
   function getDebugStats() {
@@ -752,7 +763,7 @@ export function createPcbScrollScene(canvas, options = {}) {
     camera.aspect = width / height;
     camera.fov = isMobile ? 42 : 38;
     camera.updateProjectionMatrix();
-    renderer.setPixelRatio(getPixelRatio(isMobile, lowPowerMode));
+    renderer.setPixelRatio(getPixelRatio(isMobile, lowPowerMode, width, height));
     renderer.setSize(width, height, false);
     if (composer) composer.setSize(width, height);
     if (bloom) bloom.resolution.set(width, height);
@@ -765,6 +776,7 @@ export function createPcbScrollScene(canvas, options = {}) {
 
   return {
     render,
+    advanceScroll,
     resize,
     setScrollTarget,
     highlightMilestone,
