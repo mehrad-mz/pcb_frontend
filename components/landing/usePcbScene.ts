@@ -8,7 +8,9 @@ export type PcbScene = ReturnType<typeof createPcbScrollScene>;
 
 const SCENE_LOAD_TIMEOUT_MS = 12_000;
 const RESIZE_DEBOUNCE_MS = 120;
-const ACTIVE_FPS = 60;
+const HIGH_POWER_FPS = 60;
+const LOW_POWER_FPS = 30;
+const STATS_INTERVAL_MS = 5000;
 
 function signalSceneReady(onReady: () => void) {
   requestAnimationFrame(() => {
@@ -127,11 +129,60 @@ export function usePcbScene(
     // #endregion
 
     let renderCount = 0;
+    let rafTickCount = 0;
     let lastStatsAt = performance.now();
+    let statsIntervalId = 0;
+    const targetFps = lowPowerMode ? LOW_POWER_FPS : HIGH_POWER_FPS;
+
+    shell.setAttribute("data-gpu-tier", lowPowerMode ? "low" : "high");
+    shell.closest(".landing-body")?.classList.toggle("landing-body--low-power", lowPowerMode);
+
+    const logStats = (now: number, extra: Record<string, unknown> = {}) => {
+      const statsElapsed = now - lastStatsAt;
+      if (statsElapsed < STATS_INTERVAL_MS) return;
+
+      const sceneStats = pcbRef.current?.getDebugStats?.() ?? {};
+      // #region agent log
+      debugGpuLog({
+        location: "usePcbScene.ts:stats",
+        message: "5s render stats",
+        hypothesisId: "A",
+        runId: "post-fix-v2",
+        data: {
+          rendersPer5s: renderCount,
+          rafTicksPer5s: rafTickCount,
+          estimatedFps: (renderCount / statsElapsed) * 1000,
+          rafLoopActive: animating && rafRef.current !== 0,
+          isScrollAnimating: pcbRef.current?.isScrollAnimating?.() ?? null,
+          targetFps,
+          lowPowerMode,
+          idleRenderingDisabled: true,
+          animating,
+          ...sceneStats,
+          ...extra,
+        },
+      });
+      // #endregion
+      renderCount = 0;
+      rafTickCount = 0;
+      lastStatsAt = now;
+    };
+
+    const ensureAnimationLoop = () => {
+      if (prefersReducedMotion || !shouldRunAnimationLoop()) return;
+      if (!animating) {
+        startAnimation();
+        return;
+      }
+      if (!rafRef.current) {
+        rafRef.current = requestAnimationFrame(animate);
+      }
+    };
 
     const applyResize = () => {
       pcbRef.current?.resize();
       pcbRef.current?.render();
+      ensureAnimationLoop();
     };
 
     const scheduleResize = () => {
@@ -140,16 +191,24 @@ export function usePcbScene(
     };
 
     const animate = (now: number) => {
-      rafRef.current = requestAnimationFrame(animate);
+      rafRef.current = 0;
       if (!shouldRunAnimationLoop()) return;
 
       const scene = pcbRef.current;
       if (!scene) return;
 
-      const isActive = scene.isScrollAnimating?.() ?? false;
-      if (!isActive) return;
+      rafTickCount += 1;
+      logStats(now);
 
-      const frameInterval = 1000 / ACTIVE_FPS;
+      const isActive = scene.isScrollAnimating?.() ?? false;
+      if (!isActive) {
+        animating = false;
+        return;
+      }
+
+      rafRef.current = requestAnimationFrame(animate);
+
+      const frameInterval = 1000 / targetFps;
       if (now - lastFrameTime < frameInterval) return;
 
       lastFrameTime = now;
@@ -172,31 +231,7 @@ export function usePcbScene(
         // #endregion
       }
       const renderMs = performance.now() - renderStarted;
-
-      const statsElapsed = now - lastStatsAt;
-      if (statsElapsed >= 5000) {
-        const sceneStats = scene.getDebugStats?.() ?? {};
-        // #region agent log
-        debugGpuLog({
-          location: "usePcbScene.ts:animate",
-          message: "5s render stats",
-          hypothesisId: "A",
-          runId: "post-fix",
-          data: {
-            rendersPer5s: renderCount,
-            estimatedFps: (renderCount / statsElapsed) * 1000,
-            isScrollAnimating: scene.isScrollAnimating?.() ?? null,
-            targetFps: ACTIVE_FPS,
-            idleRenderingDisabled: true,
-            lastRenderMs: renderMs,
-            animating,
-            ...sceneStats,
-          },
-        });
-        // #endregion
-        renderCount = 0;
-        lastStatsAt = now;
-      }
+      logStats(now, { lastRenderMs: renderMs });
     };
 
     const startAnimation = () => {
@@ -257,7 +292,17 @@ export function usePcbScene(
           theme: "dark",
         });
 
+        const originalSetScrollTarget = pcbRef.current.setScrollTarget.bind(pcbRef.current);
+        pcbRef.current.setScrollTarget = (target: number) => {
+          originalSetScrollTarget(target);
+          ensureAnimationLoop();
+        };
+
         pcbRef.current.render();
+
+        statsIntervalId = window.setInterval(() => {
+          logStats(performance.now());
+        }, STATS_INTERVAL_MS);
 
         if (!prefersReducedMotion && shouldRunAnimationLoop()) {
           startAnimation();
@@ -297,8 +342,11 @@ export function usePcbScene(
       cancelled = true;
       clearTimeout(loadTimeoutId);
       clearTimeout(resizeTimeoutId);
+      clearInterval(statsIntervalId);
       stopAnimation();
       resizeObserver?.disconnect();
+      shell.removeAttribute("data-gpu-tier");
+      shell.closest(".landing-body")?.classList.remove("landing-body--low-power");
 
       if (listenersAttached) {
         window.removeEventListener("resize", scheduleResize);

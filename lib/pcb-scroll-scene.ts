@@ -120,7 +120,7 @@ export function createPcbScrollScene(canvas, options = {}) {
     canvas,
     antialias: !lowPowerMode && !isMobile,
     alpha: isDark,
-    powerPreference: 'default',
+    powerPreference: lowPowerMode ? 'low-power' : 'default',
   });
   renderer.setPixelRatio(getPixelRatio(isMobile, lowPowerMode));
   renderer.setSize(initialWidth, initialHeight, false);
@@ -134,8 +134,10 @@ export function createPcbScrollScene(canvas, options = {}) {
   const scene = new THREE.Scene();
   if (isDark) {
     scene.background = new THREE.Color(bgColor);
-    scene.fog = new THREE.Fog(bgColor, 28, 52);
-  } else {
+    if (!lowPowerMode) {
+      scene.fog = new THREE.Fog(bgColor, 28, 52);
+    }
+  } else if (!lowPowerMode) {
     scene.fog = new THREE.Fog(bgColor, 18, 42);
   }
 
@@ -447,7 +449,8 @@ export function createPcbScrollScene(canvas, options = {}) {
   const milestoneGroups = [milestone0, milestone1, milestone2, milestone3];
 
   const viaMat = new THREE.MeshStandardMaterial({ color: 0xd4943a, roughness: 0.25, metalness: 0.9 });
-  for (let i = 0; i < 40; i++) {
+  const viaCount = lowPowerMode ? 8 : 40;
+  for (let i = 0; i < viaCount; i++) {
     const via = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.06, 8), viaMat);
     via.position.set(
       THREE.MathUtils.randFloatSpread(18),
@@ -613,6 +616,7 @@ export function createPcbScrollScene(canvas, options = {}) {
   let activeMilestone = -1;
 
   const smoothScroll = { target: 0, current: 0 };
+  const scrollLerp = lowPowerMode ? 0.14 : 0.07;
 
   function setPathProgress(t) {
     const clamped = THREE.MathUtils.clamp(t, 0, 1);
@@ -678,7 +682,7 @@ export function createPcbScrollScene(canvas, options = {}) {
   }
 
   function tick() {
-    smoothScroll.current += (smoothScroll.target - smoothScroll.current) * 0.07;
+    smoothScroll.current += (smoothScroll.target - smoothScroll.current) * scrollLerp;
     if (Math.abs(smoothScroll.target - smoothScroll.current) < 0.0005) {
       smoothScroll.current = smoothScroll.target;
     }
