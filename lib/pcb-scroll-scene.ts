@@ -96,7 +96,8 @@ function getCanvasViewport(canvas) {
   };
 }
 
-function getPixelRatio(isMobile) {
+function getPixelRatio(isMobile, lowPowerMode) {
+  if (lowPowerMode) return 1;
   return Math.min(window.devicePixelRatio || 1, isMobile ? 1.25 : 1.5);
 }
 
@@ -121,7 +122,7 @@ export function createPcbScrollScene(canvas, options = {}) {
     alpha: isDark,
     powerPreference: 'default',
   });
-  renderer.setPixelRatio(getPixelRatio(isMobile));
+  renderer.setPixelRatio(getPixelRatio(isMobile, lowPowerMode));
   renderer.setSize(initialWidth, initialHeight, false);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -562,6 +563,7 @@ export function createPcbScrollScene(canvas, options = {}) {
     location: "pcb-scroll-scene.ts:create",
     message: "WebGL scene initialized",
     hypothesisId: "B",
+    runId: "post-fix",
     data: {
       useComposer,
       bloomEnabled: Boolean(bloom),
@@ -746,7 +748,7 @@ export function createPcbScrollScene(canvas, options = {}) {
     camera.aspect = width / height;
     camera.fov = isMobile ? 42 : 38;
     camera.updateProjectionMatrix();
-    renderer.setPixelRatio(getPixelRatio(isMobile));
+    renderer.setPixelRatio(getPixelRatio(isMobile, lowPowerMode));
     renderer.setSize(width, height, false);
     if (composer) composer.setSize(width, height);
     if (bloom) bloom.resolution.set(width, height);

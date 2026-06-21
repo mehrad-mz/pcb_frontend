@@ -8,7 +8,6 @@ export type PcbScene = ReturnType<typeof createPcbScrollScene>;
 
 const SCENE_LOAD_TIMEOUT_MS = 12_000;
 const RESIZE_DEBOUNCE_MS = 120;
-const IDLE_FPS = 30;
 const ACTIVE_FPS = 60;
 
 function signalSceneReady(onReady: () => void) {
@@ -17,10 +16,53 @@ function signalSceneReady(onReady: () => void) {
   });
 }
 
+function detectGpuRenderer(): string | null {
+  try {
+    const canvas = document.createElement("canvas");
+    const gl = canvas.getContext("webgl") as WebGLRenderingContext | null;
+    if (!gl) return null;
+    const debugInfo = gl.getExtension("WEBGL_debug_renderer_info");
+    const renderer = debugInfo
+      ? (gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) as string)
+      : (gl.getParameter(gl.RENDERER) as string);
+    return renderer.toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
+function isWeakIntegratedGpu(renderer: string | null): boolean {
+  if (!renderer) return false;
+  if (renderer.includes("apple m") || renderer.includes("apple gpu")) return false;
+  if (renderer.includes("nvidia") || renderer.includes("geforce")) return false;
+  if (renderer.includes("radeon rx") || renderer.includes("radeon pro")) return false;
+
+  if (renderer.includes("intel")) {
+    return (
+      renderer.includes("uhd") ||
+      renderer.includes("iris") ||
+      renderer.includes("hd graphics") ||
+      renderer.includes("arc a")
+    );
+  }
+
+  return (
+    renderer.includes("radeon") &&
+    (renderer.includes("graphics") || renderer.includes("vega"))
+  );
+}
+
 function detectLowPowerMode() {
   const cores = navigator.hardwareConcurrency ?? 8;
   const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
-  return cores <= 4 || (typeof memory === "number" && memory <= 4);
+  const gpuRenderer = detectGpuRenderer();
+  const weakGpu = isWeakIntegratedGpu(gpuRenderer);
+  const lowPowerMode =
+    weakGpu ||
+    cores <= 4 ||
+    (typeof memory === "number" && memory <= 4);
+
+  return { lowPowerMode, gpuRenderer, weakGpu };
 }
 
 function shouldRunAnimationLoop() {
@@ -61,15 +103,18 @@ export function usePcbScene(
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const mobileQuery = window.matchMedia("(max-width: 767px)");
     const isMobile = () => mobileQuery.matches;
-    const lowPowerMode = detectLowPowerMode();
+    const { lowPowerMode, gpuRenderer, weakGpu } = detectLowPowerMode();
 
     // #region agent log
     debugGpuLog({
       location: "usePcbScene.ts:init",
       message: "Device capability snapshot",
       hypothesisId: "B",
+      runId: "post-fix",
       data: {
         lowPowerMode,
+        weakGpu,
+        gpuRenderer,
         isMobile: isMobile(),
         prefersReducedMotion,
         hardwareConcurrency: navigator.hardwareConcurrency,
@@ -102,8 +147,9 @@ export function usePcbScene(
       if (!scene) return;
 
       const isActive = scene.isScrollAnimating?.() ?? false;
-      const targetFps = isActive ? ACTIVE_FPS : IDLE_FPS;
-      const frameInterval = 1000 / targetFps;
+      if (!isActive) return;
+
+      const frameInterval = 1000 / ACTIVE_FPS;
       if (now - lastFrameTime < frameInterval) return;
 
       lastFrameTime = now;
@@ -135,11 +181,13 @@ export function usePcbScene(
           location: "usePcbScene.ts:animate",
           message: "5s render stats",
           hypothesisId: "A",
+          runId: "post-fix",
           data: {
             rendersPer5s: renderCount,
             estimatedFps: (renderCount / statsElapsed) * 1000,
             isScrollAnimating: scene.isScrollAnimating?.() ?? null,
-            targetFps: isActive ? ACTIVE_FPS : IDLE_FPS,
+            targetFps: ACTIVE_FPS,
+            idleRenderingDisabled: true,
             lastRenderMs: renderMs,
             animating,
             ...sceneStats,
