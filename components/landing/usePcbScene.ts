@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { debugGpuLog } from "@/lib/debug-gpu-log";
 import type { createPcbScrollScene } from "@/lib/pcb-scroll-scene";
 
 export type PcbScene = ReturnType<typeof createPcbScrollScene>;
@@ -10,7 +9,7 @@ const SCENE_LOAD_TIMEOUT_MS = 12_000;
 const RESIZE_DEBOUNCE_MS = 120;
 const HIGH_POWER_FPS = 60;
 const LOW_POWER_FPS = 20;
-const STATS_INTERVAL_MS = 5000;
+const LOOP_WAKE_MS = 1000;
 
 function signalSceneReady(onReady: () => void) {
   requestAnimationFrame(() => {
@@ -59,12 +58,11 @@ function detectLowPowerMode() {
   const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
   const gpuRenderer = detectGpuRenderer();
   const weakGpu = isWeakIntegratedGpu(gpuRenderer);
-  const lowPowerMode =
+  return (
     weakGpu ||
     cores <= 4 ||
-    (typeof memory === "number" && memory <= 4);
-
-  return { lowPowerMode, gpuRenderer, weakGpu };
+    (typeof memory === "number" && memory <= 4)
+  );
 }
 
 function shouldRunAnimationLoop() {
@@ -105,68 +103,13 @@ export function usePcbScene(
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const mobileQuery = window.matchMedia("(max-width: 767px)");
     const isMobile = () => mobileQuery.matches;
-    const { lowPowerMode, gpuRenderer, weakGpu } = detectLowPowerMode();
+    const lowPowerMode = detectLowPowerMode();
 
-    // #region agent log
-    debugGpuLog({
-      location: "usePcbScene.ts:init",
-      message: "Device capability snapshot",
-      hypothesisId: "B",
-      runId: "post-fix",
-      data: {
-        lowPowerMode,
-        weakGpu,
-        gpuRenderer,
-        isMobile: isMobile(),
-        prefersReducedMotion,
-        hardwareConcurrency: navigator.hardwareConcurrency,
-        deviceMemory: (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? null,
-        devicePixelRatio: window.devicePixelRatio,
-        userAgent: navigator.userAgent,
-        platform: navigator.platform,
-      },
-    });
-    // #endregion
-
-    let renderCount = 0;
-    let rafTickCount = 0;
-    let lastStatsAt = performance.now();
-    let statsIntervalId = 0;
     const targetFps = lowPowerMode ? LOW_POWER_FPS : HIGH_POWER_FPS;
+    let loopWakeIntervalId = 0;
 
     shell.setAttribute("data-gpu-tier", lowPowerMode ? "low" : "high");
     shell.closest(".landing-body")?.classList.toggle("landing-body--low-power", lowPowerMode);
-
-    const logStats = (now: number, extra: Record<string, unknown> = {}) => {
-      const statsElapsed = now - lastStatsAt;
-      if (statsElapsed < STATS_INTERVAL_MS) return;
-
-      const sceneStats = pcbRef.current?.getDebugStats?.() ?? {};
-      // #region agent log
-      debugGpuLog({
-        location: "usePcbScene.ts:stats",
-        message: "5s render stats",
-        hypothesisId: "A",
-        runId: "post-fix-v3",
-        data: {
-          rendersPer5s: renderCount,
-          rafTicksPer5s: rafTickCount,
-          estimatedFps: (renderCount / statsElapsed) * 1000,
-          rafLoopActive: animating && rafRef.current !== 0,
-          isScrollAnimating: pcbRef.current?.isScrollAnimating?.() ?? null,
-          targetFps,
-          lowPowerMode,
-          idleRenderingDisabled: true,
-          animating,
-          ...sceneStats,
-          ...extra,
-        },
-      });
-      // #endregion
-      renderCount = 0;
-      rafTickCount = 0;
-      lastStatsAt = now;
-    };
 
     const scheduleAnimationLoop = () => {
       if (prefersReducedMotion || !shouldRunAnimationLoop()) return;
@@ -205,12 +148,9 @@ export function usePcbScene(
         return;
       }
 
-      rafTickCount += 1;
-
       const isActive = scene.isScrollAnimating?.() ?? false;
       if (!isActive) {
         animating = false;
-        logStats(now);
         return;
       }
 
@@ -219,29 +159,9 @@ export function usePcbScene(
       const frameInterval = 1000 / targetFps;
       if (now - lastFrameTime >= frameInterval) {
         lastFrameTime = now;
-        renderCount += 1;
-        const renderStarted = performance.now();
-        try {
-          scene.render();
-        } catch (error) {
-          // #region agent log
-          debugGpuLog({
-            location: "usePcbScene.ts:animate",
-            message: "Render threw error",
-            hypothesisId: "D",
-            data: {
-              error: error instanceof Error ? error.message : String(error),
-              renderCount,
-              isScrollAnimating: scene.isScrollAnimating?.() ?? null,
-            },
-          });
-          // #endregion
-        }
-        const renderMs = performance.now() - renderStarted;
-        logStats(now, { lastRenderMs: renderMs });
+        scene.render();
       } else {
         scene.advanceScroll?.();
-        logStats(now);
       }
     };
 
@@ -307,12 +227,11 @@ export function usePcbScene(
 
         pcbRef.current.render();
 
-        statsIntervalId = window.setInterval(() => {
+        loopWakeIntervalId = window.setInterval(() => {
           if (pcbRef.current?.isScrollAnimating?.()) {
             ensureAnimationLoop();
           }
-          logStats(performance.now());
-        }, STATS_INTERVAL_MS);
+        }, LOOP_WAKE_MS);
 
         if (!prefersReducedMotion && shouldRunAnimationLoop()) {
           startAnimation();
@@ -335,16 +254,6 @@ export function usePcbScene(
       })
       .catch((error) => {
         console.error("Landing 3D init failed:", error);
-        // #region agent log
-        debugGpuLog({
-          location: "usePcbScene.ts:init-failed",
-          message: "WebGL scene init failed",
-          hypothesisId: "D",
-          data: {
-            error: error instanceof Error ? error.message : String(error),
-          },
-        });
-        // #endregion
         finishLoading();
       });
 
@@ -352,7 +261,7 @@ export function usePcbScene(
       cancelled = true;
       clearTimeout(loadTimeoutId);
       clearTimeout(resizeTimeoutId);
-      clearInterval(statsIntervalId);
+      clearInterval(loopWakeIntervalId);
       stopAnimation();
       resizeObserver?.disconnect();
       shell.removeAttribute("data-gpu-tier");
