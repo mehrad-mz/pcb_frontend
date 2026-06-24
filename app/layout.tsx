@@ -1,16 +1,6 @@
 import type { Metadata } from "next";
-import { Vazirmatn, Montserrat } from "next/font/google";
+import { yekanBakh } from "@/lib/fonts/yekan-bakh";
 import "./globals.css";
-
-const vazirmatn = Vazirmatn({
-  subsets: ["arabic", "latin"],
-  variable: "--font-vazirmatn",
-});
-
-const montserrat = Montserrat({
-  subsets: ["latin"],
-  variable: "--font-montserrat",
-});
 
 export const metadata: Metadata = {
   title: "گلوبال PCB — ساخت دقیق مدار چاپی",
@@ -21,8 +11,8 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="fa" dir="rtl" className={`${vazirmatn.variable} ${montserrat.variable}`}>
-      <body>{children}</body>
+    <html lang="fa" dir="rtl" className={yekanBakh.variable}>
+      <body className={yekanBakh.className}>{children}</body>
     </html>
   );
 }

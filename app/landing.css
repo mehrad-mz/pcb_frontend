@@ -24,8 +24,8 @@
   --landing-green: var(--brand-mid);
   --landing-nav-h: 72px;
   --landing-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --landing-font-body: "Vazirmatn", system-ui, sans-serif;
-  --landing-font-display: "Montserrat", "Vazirmatn", sans-serif;
+  --landing-font-body: var(--font-yekan-bakh), system-ui, sans-serif;
+  --landing-font-display: var(--font-yekan-bakh), system-ui, sans-serif;
 }
 
 *,
