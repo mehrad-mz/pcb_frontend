@@ -9,21 +9,24 @@ export default function LandingSeoContent() {
 
   return (
     <section className="landing-seo" aria-label="توضیحات">
+      {!expanded ? <div className="landing-seo-fade" aria-hidden="true" /> : null}
       <div className="landing-seo-inner">
-        <div
-          id={contentId}
-          className={`landing-seo-content${expanded ? " is-expanded" : ""}`}
-          dangerouslySetInnerHTML={{ __html: LANDING_SEO_CONTENT }}
-        />
-        <button
-          type="button"
-          className="landing-seo-toggle"
-          aria-expanded={expanded}
-          aria-controls={contentId}
-          onClick={() => setExpanded((open) => !open)}
-        >
-          {expanded ? "نمایش کمتر" : "نمایش بیشتر"}
-        </button>
+        <div className={`landing-seo-clip${expanded ? " is-expanded" : ""}`}>
+          <div
+            id={contentId}
+            className="landing-seo-content"
+            dangerouslySetInnerHTML={{ __html: LANDING_SEO_CONTENT }}
+          />
+          <button
+            type="button"
+            className="landing-seo-toggle"
+            aria-expanded={expanded}
+            aria-controls={contentId}
+            onClick={() => setExpanded((open) => !open)}
+          >
+            {expanded ? "نمایش کمتر" : "نمایش بیشتر"}
+          </button>
+        </div>
       </div>
     </section>
   );

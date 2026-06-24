@@ -184,6 +184,8 @@ export default function LandingPage() {
             </div>
           </section>
 
+          <LandingSeoContent />
+
           <footer className="landing-footer">
             <div className="landing-footer-inner">
               <img src="/logo.svg" alt="" className="landing-brand-logo landing-brand-logo-sm" aria-hidden="true" />
@@ -195,8 +197,6 @@ export default function LandingPage() {
               </div>
             </div>
           </footer>
-
-          <LandingSeoContent />
         </main>
           </>
         ) : null}

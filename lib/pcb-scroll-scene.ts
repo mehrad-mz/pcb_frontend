@@ -117,7 +117,7 @@ export function createPcbScrollScene(canvas, options = {}) {
   } = options;
 
   const isDark = theme === 'dark';
-  const bgColor = isDark ? 0x04070b : 0xc8d4dc;
+  const bgColor = isDark ? 0x172b26 : 0xc8d4dc;
   const { width: initialWidth, height: initialHeight } = getCanvasViewport(canvas);
 
   const renderer = new THREE.WebGLRenderer({
@@ -159,11 +159,11 @@ export function createPcbScrollScene(canvas, options = {}) {
   keyLight.position.set(8, 14, 6);
   scene.add(keyLight);
 
-  const fillLight = new THREE.DirectionalLight(isDark ? 0xa8f0d8 : 0xdce8f0, isDark ? 0.55 : 0.55);
+  const fillLight = new THREE.DirectionalLight(isDark ? 0xb0ffde : 0xdce8f0, isDark ? 0.55 : 0.55);
   fillLight.position.set(-6, 8, -4);
   scene.add(fillLight);
 
-  const boardLight = new THREE.PointLight(0x00e87a, isDark ? 0.35 : 0.2, 28, 2);
+  const boardLight = new THREE.PointLight(0x00d67e, isDark ? 0.35 : 0.2, 28, 2);
   boardLight.position.set(0, 6, 0);
   scene.add(boardLight);
 
@@ -496,7 +496,7 @@ export function createPcbScrollScene(canvas, options = {}) {
   const glowOuter = new THREE.Line(
     glowOuterGeom,
     new THREE.LineBasicMaterial({
-      color: isDark ? 0x00e87a : 0xff6b35,
+      color: isDark ? 0x00d67e : 0xff6b35,
       transparent: true,
       opacity: 0.7,
       blending: THREE.AdditiveBlending,
@@ -508,7 +508,7 @@ export function createPcbScrollScene(canvas, options = {}) {
   const glowWide = new THREE.Line(
     glowWideGeom,
     new THREE.LineBasicMaterial({
-      color: 0x00c8e0,
+      color: 0x348e75,
       transparent: true,
       opacity: 0.25,
       blending: THREE.AdditiveBlending,
@@ -526,7 +526,7 @@ export function createPcbScrollScene(canvas, options = {}) {
     new THREE.Mesh(
       new THREE.SphereGeometry(0.17, 16, 16),
       new THREE.MeshBasicMaterial({
-        color: isDark ? 0x00e87a : 0xff6b35,
+        color: isDark ? 0x00d67e : 0xff6b35,
         transparent: true,
         opacity: 0.5,
         blending: THREE.AdditiveBlending,
@@ -613,7 +613,7 @@ export function createPcbScrollScene(canvas, options = {}) {
     milestoneGroups.forEach((group, i) => {
       const body = group?.children?.[0];
       if (body?.material?.emissive) {
-        body.material.emissive.setHex(i === index ? 0x00e87a : 0x000000);
+        body.material.emissive.setHex(i === index ? 0x00d67e : 0x000000);
         body.material.emissiveIntensity = i === index ? 0.45 : 0;
       }
     });
