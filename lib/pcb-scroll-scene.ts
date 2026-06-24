@@ -8,6 +8,8 @@ const TRACE_Y = 0.09;
 const TRACE_SURFACE_Y = TRACE_Y + 0.022;
 const TRACE_W = 0.16;
 const TRACE_W_THIN = 0.09;
+const TRACE_FILLET_RADIUS = 0.45;
+const TRACE_FILLET_ARC_SEGMENTS = 8;
 
 function buildManhattanPath(nodes, y) {
   const pts = [];
@@ -28,23 +30,89 @@ function buildManhattanPath(nodes, y) {
   return pts;
 }
 
+/** Round 90° Manhattan corners with circular fillets. */
+function filletPolyline(points, radius, segmentsPerArc = TRACE_FILLET_ARC_SEGMENTS) {
+  if (points.length < 3) {
+    return points.map((p) => p.clone());
+  }
+
+  const out = [points[0].clone()];
+
+  for (let i = 1; i < points.length - 1; i++) {
+    const prev = points[i - 1];
+    const corner = points[i];
+    const next = points[i + 1];
+
+    const vIn = new THREE.Vector3().subVectors(corner, prev);
+    const vOut = new THREE.Vector3().subVectors(next, corner);
+    const lenIn = vIn.length();
+    const lenOut = vOut.length();
+
+    if (lenIn < 1e-4 || lenOut < 1e-4) {
+      out.push(corner.clone());
+      continue;
+    }
+
+    vIn.divideScalar(lenIn);
+    vOut.divideScalar(lenOut);
+
+    if (Math.abs(vIn.dot(vOut)) > 0.05) {
+      out.push(corner.clone());
+      continue;
+    }
+
+    const r = Math.min(radius, lenIn * 0.45, lenOut * 0.45);
+    if (r < 0.02) {
+      out.push(corner.clone());
+      continue;
+    }
+
+    const entry = new THREE.Vector3().copy(corner).addScaledVector(vIn, -r);
+    const exit = new THREE.Vector3().copy(corner).addScaledVector(vOut, r);
+    const center = new THREE.Vector3()
+      .copy(corner)
+      .addScaledVector(vIn, -r)
+      .addScaledVector(vOut, r);
+
+    out.push(entry);
+
+    const startAngle = Math.atan2(entry.z - center.z, entry.x - center.x);
+    const endAngle = Math.atan2(exit.z - center.z, exit.x - center.x);
+    let sweep = endAngle - startAngle;
+    const cross = vIn.x * vOut.z - vIn.z * vOut.x;
+    if (cross > 0 && sweep < 0) sweep += Math.PI * 2;
+    if (cross < 0 && sweep > 0) sweep -= Math.PI * 2;
+
+    for (let s = 1; s <= segmentsPerArc; s++) {
+      const ang = startAngle + sweep * (s / segmentsPerArc);
+      out.push(
+        new THREE.Vector3(
+          center.x + Math.cos(ang) * r,
+          corner.y,
+          center.z + Math.sin(ang) * r,
+        ),
+      );
+    }
+  }
+
+  out.push(points[points.length - 1].clone());
+  return out;
+}
+
+function buildFilletedManhattanPath(nodes, y, radius = TRACE_FILLET_RADIUS) {
+  return filletPolyline(buildManhattanPath(nodes, y), radius);
+}
+
 const mainCircuitNodes = [
   { x: -8.2, z: -5.8 },
-  { x: -8.2, z: -4.2 },
-  { x: -7.0, z: -4.2 },
-  { x: -7.0, z: -2.8 },
-  { x: -5.2, z: -2.8 },
-  { x: -5.2, z: -1.2 },
-  { x: -3.2, z: -1.2 },
-  { x: -3.2, z: 0.2 },
+  { x: -8.2, z: -2.0 },
+  { x: -4.0, z: -2.0 },
+  { x: -4.0, z: 0.2 },
   { x: -1.0, z: 0.2 },
   { x: -1.0, z: 1.8 },
-  { x: 1.2, z: 1.8 },
-  { x: 1.2, z: 3.2 },
-  { x: 3.5, z: 3.2 },
+  { x: 3.5, z: 1.8 },
   { x: 3.5, z: 4.8 },
-  { x: 5.8, z: 4.8 },
-  { x: 5.8, z: 6.2 },
+  { x: 8.2, z: 4.8 },
   { x: 8.2, z: 6.2 },
 ];
 
@@ -175,27 +243,27 @@ export function createPcbScrollScene(canvas, options = {}) {
   }
   scene.add(boardGroup);
 
-  const branchCircuitA = buildManhattanPath([
-    { x: -5.2, z: -2.8 },
-    { x: -5.2, z: -4.5 },
+  const branchCircuitA = buildFilletedManhattanPath([
+    { x: -4.0, z: -2.0 },
+    { x: -4.0, z: -4.5 },
     { x: -3.5, z: -4.5 },
     { x: -3.5, z: -5.5 },
   ], TRACE_Y);
 
-  const branchCircuitB = buildManhattanPath([
+  const branchCircuitB = buildFilletedManhattanPath([
     { x: 1.2, z: 1.8 },
     { x: 3.0, z: 1.8 },
     { x: 3.0, z: 0.5 },
     { x: 5.0, z: 0.5 },
   ], TRACE_Y);
 
-  const branchCircuitC = buildManhattanPath([
+  const branchCircuitC = buildFilletedManhattanPath([
     { x: 3.5, z: 4.8 },
     { x: 3.5, z: 6.5 },
     { x: 1.0, z: 6.5 },
   ], TRACE_Y);
 
-  const mainCircuitPath = buildManhattanPath(mainCircuitNodes, TRACE_Y);
+  const mainCircuitPath = buildFilletedManhattanPath(mainCircuitNodes, TRACE_Y);
 
   function createPcbTexture() {
     const size = 1024;
@@ -224,17 +292,26 @@ export function createPcbScrollScene(canvas, options = {}) {
       ctx.stroke();
     }
 
-    function drawTexTrace(x1, z1, x2, z2, w) {
-      const sx = (x1 + 11) / 22;
-      const sy = (z1 + 8) / 16;
-      const ex = (x2 + 11) / 22;
-      const ey = (z2 + 8) / 16;
+    function drawTexPath(points, w) {
+      if (points.length < 2) return;
+
       ctx.strokeStyle = 'rgba(220, 160, 70, 0.82)';
       ctx.lineWidth = w;
-      ctx.lineCap = 'square';
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
       ctx.beginPath();
-      ctx.moveTo(sx * size, sy * size);
-      ctx.lineTo(ex * size, ey * size);
+
+      const toCanvas = (p) => ({
+        x: ((p.x + 11) / 22) * size,
+        y: ((p.z + 8) / 16) * size,
+      });
+
+      const start = toCanvas(points[0]);
+      ctx.moveTo(start.x, start.y);
+      for (let i = 1; i < points.length; i++) {
+        const pt = toCanvas(points[i]);
+        ctx.lineTo(pt.x, pt.y);
+      }
       ctx.stroke();
     }
 
@@ -260,12 +337,6 @@ export function createPcbScrollScene(canvas, options = {}) {
       ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
       ctx.font = '600 18px sans-serif';
       ctx.fillText(label, cx - w * 0.22, cy + 6);
-    }
-
-    function drawTexPath(points, w) {
-      for (let i = 0; i < points.length - 1; i++) {
-        drawTexTrace(points[i].x, points[i].z, points[i + 1].x, points[i + 1].z, w);
-      }
     }
 
     drawTexPath(mainCircuitPath, 6);

@@ -80,15 +80,30 @@ export function useLandingScroll(
       pcbRef.current?.setScrollTarget(clamped);
     };
 
-    const applyPcbProgress = (self: ScrollTrigger, rangeStart: number, rangeEnd: number) => {
-      if (!self.isActive) return;
-      setScrollTarget(lerpProgress(self.progress, rangeStart, rangeEnd));
+    /** PCB bands in DOM order — first active section wins (avoids late triggers jumping progress). */
+    const pcbBands: Array<{ trigger: ScrollTrigger; rangeStart: number; rangeEnd: number }> = [];
+
+    const syncPcbProgress = () => {
+      for (const band of pcbBands) {
+        if (band.trigger.isActive) {
+          setScrollTarget(lerpProgress(band.trigger.progress, band.rangeStart, band.rangeEnd));
+          return;
+        }
+      }
     };
 
     const triggers: ScrollTrigger[] = [];
 
-    const addTrigger = (config: ScrollTrigger.Vars) => {
-      triggers.push(ScrollTrigger.create(config));
+    const addPcbTrigger = (config: ScrollTrigger.Vars, rangeStart: number, rangeEnd: number) => {
+      const trigger = ScrollTrigger.create({
+        ...config,
+        onUpdate: (self) => {
+          config.onUpdate?.(self);
+          syncPcbProgress();
+        },
+      });
+      triggers.push(trigger);
+      pcbBands.push({ trigger, rangeStart, rangeEnd });
     };
 
     setStoryStep(0);
@@ -98,14 +113,32 @@ export function useLandingScroll(
 
     const hero = rootRef.current.querySelector(".landing-hero");
     if (hero) {
-      addTrigger({
-        trigger: hero,
-        start: "top top",
-        end: "bottom top",
-        scrub: 0.65,
-        invalidateOnRefresh: true,
-        onUpdate: (self) => applyPcbProgress(self, 0, PCB_PROGRESS.heroEnd),
-      });
+      addPcbTrigger(
+        {
+          trigger: hero,
+          start: "top top",
+          end: "bottom top",
+          scrub: 0.65,
+          invalidateOnRefresh: true,
+        },
+        0,
+        PCB_PROGRESS.heroEnd,
+      );
+    }
+
+    const products = rootRef.current.querySelector(".landing-products");
+    if (products) {
+      addPcbTrigger(
+        {
+          trigger: products,
+          start: "top top",
+          end: "bottom top",
+          scrub: 0.65,
+          invalidateOnRefresh: true,
+        },
+        PCB_PROGRESS.heroEnd,
+        PCB_PROGRESS.productsEnd,
+      );
     }
 
     const storySection = rootRef.current.querySelector(".landing-story");
@@ -126,51 +159,56 @@ export function useLandingScroll(
         },
         onUpdate: (self) => {
           syncStoryStep(self.progress);
-          applyPcbProgress(self, PCB_PROGRESS.productsEnd, PCB_PROGRESS.storyEnd);
+          syncPcbProgress();
         },
       });
       triggers.push(storyTrigger);
-    }
-
-    const products = rootRef.current.querySelector(".landing-products");
-    if (products) {
-      addTrigger({
-        trigger: products,
-        start: "top 90%",
-        end: "bottom 60%",
-        scrub: 0.65,
-        invalidateOnRefresh: true,
-        onUpdate: (self) => applyPcbProgress(self, PCB_PROGRESS.heroEnd, PCB_PROGRESS.productsEnd),
+      pcbBands.push({
+        trigger: storyTrigger,
+        rangeStart: PCB_PROGRESS.productsEnd,
+        rangeEnd: PCB_PROGRESS.storyEnd,
       });
     }
 
     const features = rootRef.current.querySelector(".landing-features");
     if (features) {
-      addTrigger({
-        trigger: features,
-        start: "top 80%",
-        end: "bottom 30%",
-        scrub: 0.65,
-        invalidateOnRefresh: true,
-        onUpdate: (self) => applyPcbProgress(self, PCB_PROGRESS.storyEnd, PCB_PROGRESS.featuresEnd),
-      });
+      addPcbTrigger(
+        {
+          trigger: features,
+          start: "top top",
+          end: "bottom top",
+          scrub: 0.65,
+          invalidateOnRefresh: true,
+        },
+        PCB_PROGRESS.storyEnd,
+        PCB_PROGRESS.featuresEnd,
+      );
     }
 
     const cta = rootRef.current.querySelector(".landing-cta");
     if (cta && landingScroll) {
-      addTrigger({
+      const ctaTrigger = ScrollTrigger.create({
         trigger: cta,
-        start: "top 85%",
+        start: "top top",
         endTrigger: landingScroll,
         end: "bottom bottom",
         scrub: 0.65,
         invalidateOnRefresh: true,
-        onUpdate: (self) => applyPcbProgress(self, PCB_PROGRESS.featuresEnd, PCB_PROGRESS.pageEnd),
+        onUpdate: () => syncPcbProgress(),
         onLeave: () => setScrollTarget(PCB_PROGRESS.pageEnd),
+      });
+      triggers.push(ctaTrigger);
+      pcbBands.push({
+        trigger: ctaTrigger,
+        rangeStart: PCB_PROGRESS.featuresEnd,
+        rangeEnd: PCB_PROGRESS.pageEnd,
       });
     }
 
-    const refreshScroll = () => ScrollTrigger.refresh();
+    const refreshScroll = () => {
+      ScrollTrigger.refresh();
+      syncPcbProgress();
+    };
 
     let resizeTimeoutId = 0;
     const onResize = () => {
@@ -192,6 +230,8 @@ export function useLandingScroll(
         } else if (storyTrigger) {
           syncStoryStep(storyTrigger.progress);
         }
+
+        syncPcbProgress();
       }, RESIZE_DEBOUNCE_MS);
     };
 
