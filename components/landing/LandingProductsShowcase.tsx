@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
-import { DJANGO_ROUTES, LANDING_PRODUCTS, type ProductSummary } from "@/lib/landing-data";
+import { APP_ROUTES, LANDING_PRODUCTS, type ProductSummary } from "@/lib/landing-data";
 
 function ProductDetail({ product }: { product: ProductSummary }) {
   return (
@@ -15,9 +16,9 @@ function ProductDetail({ product }: { product: ProductSummary }) {
       <p className="landing-product-price" dangerouslySetInnerHTML={{ __html: product.priceHtml }} />
       <p className="landing-product-lead">{product.leadTime}</p>
       <div className="landing-product-actions">
-        <a href={DJANGO_ROUTES.newOrder} className="landing-btn landing-btn-primary">
+        <Link href={APP_ROUTES.newOrder} className="landing-btn landing-btn-primary">
           سفارش
-        </a>
+        </Link>
       </div>
     </div>
   );

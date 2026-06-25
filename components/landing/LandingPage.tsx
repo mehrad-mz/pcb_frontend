@@ -8,7 +8,7 @@ import LandingSeoContent from "./LandingSeoContent";
 import { useLandingScroll } from "./useLandingScroll";
 import { usePcbScene } from "./usePcbScene";
 import {
-  DJANGO_ROUTES,
+  APP_ROUTES,
   FEATURE_CARDS,
   NAV_LINKS,
   STORY_STEP_LABELS,
@@ -57,12 +57,12 @@ export default function LandingPage() {
           </nav>
 
           <div className="landing-nav-actions">
-            <a href={DJANGO_ROUTES.login} className="landing-btn landing-btn-ghost">
+            <Link href={APP_ROUTES.login} className="landing-btn landing-btn-ghost">
               ورود
-            </a>
-            <a href={DJANGO_ROUTES.newOrder} className="landing-btn landing-btn-primary">
+            </Link>
+            <Link href={APP_ROUTES.newOrder} className="landing-btn landing-btn-primary">
               ثبت سفارش
-            </a>
+            </Link>
             <button
               type="button"
               className="landing-menu-toggle"
@@ -83,9 +83,9 @@ export default function LandingPage() {
                 {link.label}
               </a>
             ))}
-            <a href={DJANGO_ROUTES.newOrder} onClick={closeMenu}>
+            <Link href={APP_ROUTES.newOrder} onClick={closeMenu}>
               ثبت سفارش
-            </a>
+            </Link>
           </div>
         ) : null}
 
@@ -98,9 +98,9 @@ export default function LandingPage() {
                 از اولین نمونه تا تولید انبوه — فایل گربر را آپلود کن، جریان برق را در طراحی‌ات ببین و بردها را در کمتر از ۲۴ ساعت دریافت کن.
               </p>
               <div className="landing-hero-actions">
-                <a href={DJANGO_ROUTES.newOrder} className="landing-btn landing-btn-primary landing-btn-lg">
+                <Link href={APP_ROUTES.newOrder} className="landing-btn landing-btn-primary landing-btn-lg">
                   شروع سفارش
-                </a>
+                </Link>
                 <a href="#process" className="landing-btn landing-btn-ghost landing-btn-lg">
                   مشاهده فرآیند
                 </a>
@@ -178,9 +178,9 @@ export default function LandingPage() {
             <div className="landing-cta-inner">
               <h2>آماده‌ای طراحی بعدی‌ات را زنده کنی؟</h2>
               <p>گربر آپلود کن، مشخصات را تنظیم کن و ببین بردت جان می‌گیرد.</p>
-              <a href={DJANGO_ROUTES.newOrder} className="landing-btn landing-btn-primary landing-btn-lg">
+              <Link href={APP_ROUTES.newOrder} className="landing-btn landing-btn-primary landing-btn-lg">
                 همین حالا سفارش بده
-              </a>
+              </Link>
             </div>
           </section>
 
@@ -189,12 +189,12 @@ export default function LandingPage() {
           <footer className="landing-footer">
             <div className="landing-footer-inner">
               <img src="/logo.svg" alt="" className="landing-brand-logo landing-brand-logo-sm" aria-hidden="true" />
-              <p>&copy; {new Date().getFullYear()} Global PCB. تمام حقوق محفوظ است.</p>
               <div className="landing-footer-links">
-                <a href={DJANGO_ROUTES.help}>راهنما</a>
-                <a href={DJANGO_ROUTES.help}>درباره ما</a>
-                <a href={DJANGO_ROUTES.help}>تماس</a>
+                <a href={APP_ROUTES.help}>راهنما</a>
+                <a href={APP_ROUTES.help}>درباره ما</a>
+                <a href={APP_ROUTES.help}>تماس</a>
               </div>
+              <p className="landing-footer-copy">&copy; {new Date().getFullYear()} Global PCB. تمام حقوق محفوظ است.</p>
             </div>
           </footer>
         </main>

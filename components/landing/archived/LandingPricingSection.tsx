@@ -1,4 +1,4 @@
-import { DJANGO_ROUTES } from "@/lib/landing-data";
+import { APP_ROUTES } from "@/lib/landing-data";
 import { PRICING_CARDS } from "@/lib/landing-archived-sections";
 
 /**
@@ -17,7 +17,7 @@ export default function LandingPricingSection() {
             تا تولید انبوه.
           </h2>
           <p>۵ برد، استعلام فوری و تخفیف حجمی.</p>
-          <a href={DJANGO_ROUTES.newOrder} className="landing-btn landing-btn-primary landing-btn-lg">
+          <a href={APP_ROUTES.newOrder} className="landing-btn landing-btn-primary landing-btn-lg">
             استعلام فوری
           </a>
         </div>

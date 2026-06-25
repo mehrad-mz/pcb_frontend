@@ -1,7 +1,7 @@
-/** Django template routes used from the Next.js landing page. */
-export const DJANGO_ROUTES = {
-  login: "/api/v1/auth/login/",
-  newOrder: "/api/v1/pcb/new-order/",
+/** App routes used from the Next.js landing page. */
+export const APP_ROUTES = {
+  login: "/login",
+  newOrder: "/order",
   help: "/api/v1/pcb/help/",
 } as const;
 

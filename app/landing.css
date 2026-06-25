@@ -935,6 +935,11 @@ body {
   width: 100%;
 }
 
+.landing-footer-copy {
+  width: 100%;
+  margin: 0;
+}
+
 .landing-footer-links a {
   color: var(--landing-muted);
   text-decoration: none;

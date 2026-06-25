@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const djangoOrigin =
-  process.env.DJANGO_API_ORIGIN || "http://localhost:8000";
+  process.env.DJANGO_API_ORIGIN || "http://127.0.0.1:8000";
 
 const nextConfig: NextConfig = {
   output: "standalone",
@@ -10,8 +10,14 @@ const nextConfig: NextConfig = {
   },
   async rewrites() {
     return [
-      { source: "/api/:path*", destination: `${djangoOrigin}/api/:path*` },
-      { source: "/media/:path*", destination: `${djangoOrigin}/media/:path*` },
+      {
+        source: "/api/:path*",
+        destination: `${djangoOrigin}/api/:path*/`,
+      },
+      {
+        source: "/media/:path*",
+        destination: `${djangoOrigin}/media/:path*`,
+      },
     ];
   },
 };

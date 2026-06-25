@@ -1,0 +1,118 @@
+/* Auth pages — unified dark theme with brand colors */
+
+.auth-page {
+  --auth-bg: #172b26;
+  --auth-surface: #1f3b34;
+  --auth-surface-raised: #254a41;
+  --auth-fg: #f0fdf8;
+  --auth-muted: #9ec7b8;
+  --auth-primary: #00d67e;
+  --auth-primary-fg: #172b26;
+  --auth-border: #348e75;
+  --auth-ring: #b0ffde;
+
+  min-height: 100svh;
+  background: var(--auth-bg);
+  color: var(--auth-fg);
+}
+
+.auth-page .auth-brand {
+  justify-content: center;
+}
+
+.auth-page .auth-brand-logo {
+  display: block;
+  width: min(240px, 72vw);
+  height: auto;
+  max-height: 52px;
+  object-fit: contain;
+}
+
+.auth-page .auth-card {
+  background: var(--auth-surface);
+  color: var(--auth-fg);
+  border: 1px solid color-mix(in srgb, var(--auth-border) 45%, transparent);
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 20%),
+    0 12px 32px rgb(0 0 0 / 28%);
+}
+
+.auth-page .auth-card [data-slot="card-title"] {
+  color: var(--auth-fg);
+}
+
+.auth-page .auth-card [data-slot="card-description"] {
+  color: var(--auth-muted);
+}
+
+.auth-page .auth-tabs-list {
+  width: 100%;
+  background: color-mix(in srgb, var(--auth-bg) 70%, var(--auth-surface-raised));
+  border: 1px solid color-mix(in srgb, var(--auth-border) 35%, transparent);
+}
+
+.auth-page .auth-tabs-trigger[data-active] {
+  background: var(--auth-surface-raised);
+  color: var(--auth-fg);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 22%);
+}
+
+.auth-page .auth-tabs-trigger:not([data-active]) {
+  color: var(--auth-muted);
+}
+
+.auth-page .auth-tabs-trigger:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.auth-page [data-slot="input"] {
+  background: color-mix(in srgb, var(--auth-bg) 55%, var(--auth-surface));
+  border-color: color-mix(in srgb, var(--auth-border) 50%, transparent);
+  color: var(--auth-fg);
+}
+
+.auth-page [data-slot="input"]::placeholder {
+  color: color-mix(in srgb, var(--auth-muted) 70%, transparent);
+}
+
+.auth-page [data-slot="input"]:focus-visible {
+  border-color: var(--auth-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--auth-ring) 35%, transparent);
+}
+
+.auth-page [data-slot="label"],
+.auth-page [data-slot="field-label"] {
+  color: var(--auth-fg);
+}
+
+.auth-page [data-slot="field-description"],
+.auth-page [data-slot="field-error"] {
+  color: var(--auth-muted);
+}
+
+.auth-page [data-slot="field-error"] {
+  color: #ff8a8a;
+}
+
+.auth-page .auth-submit {
+  background: var(--auth-primary);
+  color: var(--auth-primary-fg);
+  font-weight: 600;
+}
+
+.auth-page .auth-submit:hover {
+  background: color-mix(in srgb, var(--auth-primary) 90%, #fff);
+}
+
+.auth-page .auth-note {
+  color: var(--auth-muted);
+}
+
+.auth-page .auth-link {
+  color: var(--auth-ring);
+}
+
+.auth-page .auth-link:hover {
+  color: var(--auth-primary);
+}
