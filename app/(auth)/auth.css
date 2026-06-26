@@ -10,10 +10,12 @@
   --auth-primary-fg: #172b26;
   --auth-border: #348e75;
   --auth-ring: #b0ffde;
+  --auth-input-bg: color-mix(in srgb, var(--auth-bg) 55%, var(--auth-surface));
 
   min-height: 100svh;
   background: var(--auth-bg);
   color: var(--auth-fg);
+  color-scheme: dark;
 }
 
 .auth-page .auth-brand {
@@ -51,34 +53,70 @@
   border: 1px solid color-mix(in srgb, var(--auth-border) 35%, transparent);
 }
 
-.auth-page .auth-tabs-trigger[data-active] {
+.auth-page .auth-tabs-indicator {
   background: var(--auth-surface-raised);
-  color: var(--auth-fg);
   box-shadow: 0 1px 3px rgb(0 0 0 / 22%);
+  will-change: transform, width;
+}
+
+.auth-page .auth-tabs-trigger[data-active] {
+  color: var(--auth-fg);
 }
 
 .auth-page .auth-tabs-trigger:not([data-active]) {
   color: var(--auth-muted);
 }
 
-.auth-page .auth-tabs-trigger:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
+.auth-page .auth-tabs-panel {
+  will-change: transform, opacity;
 }
 
 .auth-page [data-slot="input"] {
-  background: color-mix(in srgb, var(--auth-bg) 55%, var(--auth-surface));
+  box-sizing: border-box;
+  height: 2.5rem;
+  min-height: 2.5rem;
+  padding-block: 0;
+  padding-inline: 0.625rem;
+  line-height: 2.5rem;
+  appearance: none;
+  background-color: var(--auth-input-bg) !important;
   border-color: color-mix(in srgb, var(--auth-border) 50%, transparent);
   color: var(--auth-fg);
+  caret-color: var(--auth-fg);
+}
+
+.auth-page [data-slot="input"]:hover,
+.auth-page [data-slot="input"]:focus,
+.auth-page [data-slot="input"]:focus-visible,
+.auth-page [data-slot="input"]:active {
+  background-color: var(--auth-input-bg) !important;
 }
 
 .auth-page [data-slot="input"]::placeholder {
   color: color-mix(in srgb, var(--auth-muted) 70%, transparent);
+  line-height: 2.5rem;
+}
+
+.auth-page [data-slot="input"]:-webkit-autofill,
+.auth-page [data-slot="input"]:-webkit-autofill:hover,
+.auth-page [data-slot="input"]:-webkit-autofill:focus,
+.auth-page [data-slot="input"]:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px var(--auth-input-bg) inset !important;
+  box-shadow: 0 0 0 1000px var(--auth-input-bg) inset !important;
+  -webkit-text-fill-color: var(--auth-fg) !important;
+  caret-color: var(--auth-fg);
+  transition: background-color 99999s ease-out 0s;
 }
 
 .auth-page [data-slot="input"]:focus-visible {
   border-color: var(--auth-primary);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--auth-ring) 35%, transparent);
+}
+
+/* Latin digits center more reliably than Persian font metrics in single-line inputs */
+.auth-page [data-slot="input"][dir="ltr"] {
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-variant-numeric: tabular-nums;
 }
 
 .auth-page [data-slot="label"],
@@ -115,4 +153,63 @@
 
 .auth-page .auth-link:hover {
   color: var(--auth-primary);
+}
+
+.auth-otp-input {
+  display: flex;
+  justify-content: center;
+  gap: 0.625rem;
+  direction: ltr;
+}
+
+.auth-otp-box {
+  box-sizing: border-box;
+  width: 3rem;
+  height: 3rem;
+  padding: 0;
+  border-radius: 0.75rem;
+  border: 1.5px solid color-mix(in srgb, var(--auth-border) 45%, transparent);
+  background-color: var(--auth-input-bg);
+  color: var(--auth-fg);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 1.25rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 3rem;
+  text-align: center;
+  caret-color: var(--auth-fg);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.auth-otp-box:focus {
+  outline: none;
+}
+
+.auth-otp-box:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.auth-otp-input[data-status="idle"] .auth-otp-box--active {
+  border-color: var(--auth-primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--auth-primary) 22%, transparent);
+}
+
+.auth-otp-input[data-status="error"] .auth-otp-box {
+  border-color: #f87171;
+  box-shadow: none;
+}
+
+.auth-otp-input[data-status="success"] .auth-otp-box {
+  border-color: var(--auth-primary);
+  box-shadow: none;
+}
+
+.auth-otp-error {
+  width: 100%;
+  text-align: center;
+  color: #ff8a8a;
 }

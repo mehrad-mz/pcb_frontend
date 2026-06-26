@@ -4,6 +4,23 @@ export type ApiError = {
   message?: string;
 };
 
+const AUTH_ERROR_TRANSLATIONS: Record<string, string> = {
+  "Invalid or expired OTP.": "کد تأیید نادرست یا منقضی شده است.",
+  "OTP has expired.": "کد تأیید منقضی شده است.",
+  "Too many failed attempts. Try again later.":
+    "تعداد تلاش‌های ناموفق زیاد است. لطفاً بعداً دوباره تلاش کنید.",
+  "Invalid phone or password.": "شماره موبایل یا رمز عبور نادرست است.",
+  "Phone and password are required.": "شماره موبایل و رمز عبور الزامی است.",
+  "Invalid credentials": "اطلاعات ورود نادرست است.",
+  "phone and method are required.": "شماره موبایل و روش ورود الزامی است.",
+  "phone number is not valid format": "فرمت شماره موبایل معتبر نیست.",
+};
+
+export function translateAuthError(message: string): string {
+  const trimmed = message.trim();
+  return AUTH_ERROR_TRANSLATIONS[trimmed] ?? message;
+}
+
 export function parseDjangoError(errorData: unknown): string {
   if (!errorData) return "خطای ناشناخته‌ای رخ داد.";
 
@@ -31,12 +48,12 @@ export function parseDjangoError(errorData: unknown): string {
 
 export function getErrorMessage(err: unknown): string {
   if (err && typeof err === "object" && "data" in err) {
-    return parseDjangoError((err as ApiError).data);
+    return translateAuthError(parseDjangoError((err as ApiError).data));
   }
   if (err && typeof err === "object" && "status" in err) {
     const apiErr = err as ApiError;
     if (apiErr.status === 0) return "ارتباط با سرور برقرار نشد.";
   }
-  if (err instanceof Error) return err.message;
+  if (err instanceof Error) return translateAuthError(err.message);
   return "خطایی رخ داد.";
 }

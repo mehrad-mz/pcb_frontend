@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { AuthSubmitButton } from "@/components/auth/AuthSubmitButton";
+import { OtpInput, OTP_LENGTH, type OtpInputStatus } from "@/components/auth/OtpInput";
 import { useAuthSubmit } from "@/components/auth/useAuthSubmit";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,7 +14,6 @@ import {
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
 import { resendOtp, verifyOtp } from "@/lib/api/auth";
 import { getErrorMessage } from "@/lib/api/errors";
 import { saveTokens } from "@/lib/api/tokens";
@@ -29,6 +29,7 @@ type OtpFormProps = {
 export function OtpForm({ phone, next }: OtpFormProps) {
   const router = useRouter();
   const [code, setCode] = useState("");
+  const [otpStatus, setOtpStatus] = useState<OtpInputStatus>("idle");
   const { error, setError, loading, run } = useAuthSubmit();
   const [secondsLeft, setSecondsLeft] = useState(RESEND_SECONDS);
 
@@ -42,8 +43,18 @@ export function OtpForm({ phone, next }: OtpFormProps) {
     return () => clearInterval(timer);
   }, []);
 
+  function handleCodeChange(value: string) {
+    setCode(value);
+    if (otpStatus === "error") {
+      setOtpStatus("idle");
+      setError("");
+    }
+  }
+
   async function handleResend() {
     setError("");
+    setOtpStatus("idle");
+    setCode("");
     try {
       await resendOtp(phone);
       setSecondsLeft(RESEND_SECONDS);
@@ -56,19 +67,28 @@ export function OtpForm({ phone, next }: OtpFormProps) {
     e.preventDefault();
 
     const trimmed = code.trim();
-    if (!trimmed) {
-      setError("کد تأیید را وارد کنید.");
+    if (trimmed.length !== OTP_LENGTH) {
+      setOtpStatus("error");
+      setError(`کد تأیید باید ${OTP_LENGTH} رقم باشد.`);
       return;
     }
 
     await run(async () => {
-      const result = await verifyOtp(phone, trimmed);
-      saveTokens(result.access, result.refresh);
+      try {
+        const result = await verifyOtp(phone, trimmed);
+        setOtpStatus("success");
+        saveTokens(result.access, result.refresh);
 
-      if (result.has_password) {
-        router.push(appendNext("/set-password", next));
-      } else {
-        router.push(next);
+        const destination = result.has_password
+          ? appendNext("/set-password", next)
+          : next;
+
+        window.setTimeout(() => {
+          router.push(destination);
+        }, 450);
+      } catch (err) {
+        setOtpStatus("error");
+        throw err;
       }
     });
   }
@@ -76,8 +96,6 @@ export function OtpForm({ phone, next }: OtpFormProps) {
   return (
     <form onSubmit={handleSubmit}>
       <FieldGroup className="gap-5">
-        {error ? <FieldError>{error}</FieldError> : null}
-
         <FieldDescription className="auth-note text-center text-sm">
           کد تأیید به شماره{" "}
           <span className="font-medium text-[var(--auth-fg)]" dir="ltr">
@@ -87,22 +105,20 @@ export function OtpForm({ phone, next }: OtpFormProps) {
         </FieldDescription>
 
         <Field>
-          <FieldLabel htmlFor="otp-code">کد تأیید</FieldLabel>
-          <Input
+          <FieldLabel id="otp-code-label" htmlFor="otp-code">
+            کد تأیید
+          </FieldLabel>
+          <OtpInput
             id="otp-code"
-            name="otp_code"
-            type="text"
-            inputMode="numeric"
-            dir="ltr"
-            className="h-10 text-center text-lg tracking-[0.3em]"
-            placeholder="•••••"
-            maxLength={6}
-            autoComplete="one-time-code"
             value={code}
-            onChange={(e) => setCode(e.target.value)}
-            aria-invalid={!!error}
-            required
+            onChange={handleCodeChange}
+            status={otpStatus}
+            disabled={loading || otpStatus === "success"}
+            aria-invalid={otpStatus === "error" || !!error}
           />
+          {error ? (
+            <FieldError className="auth-otp-error">{error}</FieldError>
+          ) : null}
         </Field>
 
         <Field>
@@ -116,6 +132,7 @@ export function OtpForm({ phone, next }: OtpFormProps) {
               variant="link"
               className="auth-link h-auto p-0"
               onClick={handleResend}
+              disabled={loading}
             >
               ارسال مجدد کد
             </Button>

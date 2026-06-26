@@ -53,6 +53,13 @@ export async function resendOtp(phone: string): Promise<void> {
   await api.post("/api/v1/auth/resend-otp/", { phone });
 }
 
+export async function passwordLogin(
+  phone: string,
+  password: string
+): Promise<AuthTokenResponse> {
+  return api.post<AuthTokenResponse>("/api/v1/auth/login/", { phone, password });
+}
+
 export async function setPassword(
   password: string,
   confirmPassword: string

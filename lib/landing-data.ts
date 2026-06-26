@@ -39,32 +39,31 @@ export const STORY_STEPS: StoryStep[] = [
   },
 ];
 
-export type FeatureCard = {
-  icon: string;
+export type SiteStat = {
+  id: string;
+  icon: "clipboard-list" | "factory" | "package-check";
   title: string;
-  description: string;
+  value: string;
 };
 
-export const FEATURE_CARDS: FeatureCard[] = [
+export const LANDING_SITE_STATS: SiteStat[] = [
   {
-    icon: "⚡",
-    title: "نمونه ۲۴ ساعته",
-    description: "برد ۱ تا ۴ لایه از ۲ دلار.",
+    id: "registered",
+    icon: "clipboard-list",
+    title: "سفارش ثبت‌شده",
+    value: "۱۲,۵۰۰+",
   },
   {
-    icon: "◎",
-    title: "امپدانس کنترل‌شده",
-    description: "۵۰Ω، ۹۰Ω دیفرانسیل.",
+    id: "production",
+    icon: "factory",
+    title: "سفارش در حال ساخت",
+    value: "۳۸۰+",
   },
   {
-    icon: "▣",
-    title: "تا ۳۲ لایه",
-    description: "Via کور، via مدفون و via-in-pad.",
-  },
-  {
-    icon: "◈",
-    title: "آماده مونتاژ",
-    description: "مونتاژ SMT، stencil و BOM.",
+    id: "delivered",
+    icon: "package-check",
+    title: "برد تحویل‌داده‌شده",
+    value: "۹۸,۰۰۰+",
   },
 ];
 
@@ -78,7 +77,6 @@ export type ProductSummary = {
   id: string;
   title: string;
   priceHtml: string;
-  leadTime: string;
   features: string[];
   imageSrc: string;
   imageAlt: string;
@@ -89,7 +87,6 @@ export const LANDING_PRODUCTS: ProductSummary[] = [
     id: "fr4",
     title: "برد FR-4",
     priceHtml: "از <strong>۱۵۰,۰۰۰ تومان</strong> / ۵ عدد",
-    leadTime: "زمان ساخت: ۲۴ ساعت",
     features: ["۱ تا ۳۲ لایه", "POFV رایگان برای ۶+ لایه", "کنترل امپدانس ±۱۰٪"],
     imageSrc: "/products/fr4-pcb.svg",
     imageAlt: "نمونه برد FR-4 با مسیرهای طلایی",
@@ -98,7 +95,6 @@ export const LANDING_PRODUCTS: ProductSummary[] = [
     id: "stencil",
     title: "Stencil SMT",
     priceHtml: "از <strong>۲۵۰,۰۰۰ تومان</strong>",
-    leadTime: "زمان ساخت: ۱۲–۴۸ ساعت",
     features: ["فولاد ضدزنگ ۳۰۴ HTA", "دقت برش لیزری ±۰.۰۰۳ میلی‌متر", "الکتروپولیش و نانو-coating"],
     imageSrc: "/products/smt-stencil.svg",
     imageAlt: "استencil SMT با برش لیزری دقیق",

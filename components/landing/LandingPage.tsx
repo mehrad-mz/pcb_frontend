@@ -1,15 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import LandingProductsShowcase from "./LandingProductsShowcase";
 import LandingSceneLoader from "./LandingSceneLoader";
 import LandingSeoContent from "./LandingSeoContent";
+import LandingSiteStats from "./LandingSiteStats";
 import { useLandingScroll } from "./useLandingScroll";
 import { usePcbScene } from "./usePcbScene";
 import {
   APP_ROUTES,
-  FEATURE_CARDS,
   NAV_LINKS,
   STORY_STEP_LABELS,
   STORY_STEPS,
@@ -27,7 +27,14 @@ export default function LandingPage() {
   const pcbRef = usePcbScene(shellRef, handleSceneReady);
   useLandingScroll(shellRef, pcbRef, sceneReady);
 
-  const closeMenu = () => setMenuOpen(false);
+  const closeMenu = useCallback(() => setMenuOpen(false), []);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    window.addEventListener("scroll", closeMenu, { passive: true });
+    return () => window.removeEventListener("scroll", closeMenu);
+  }, [menuOpen, closeMenu]);
 
   return (
     <div className={`landing-body${sceneReady ? "" : " landing-body--loading"}`}>
@@ -58,7 +65,7 @@ export default function LandingPage() {
 
           <div className="landing-nav-actions">
             <Link href={APP_ROUTES.login} className="landing-btn landing-btn-ghost">
-              ورود
+              ورود / ثبت‌نام
             </Link>
             <Link href={APP_ROUTES.newOrder} className="landing-btn landing-btn-primary">
               ثبت سفارش
@@ -66,7 +73,7 @@ export default function LandingPage() {
             <button
               type="button"
               className="landing-menu-toggle"
-              aria-label="باز کردن منو"
+              aria-label={menuOpen ? "بستن منو" : "باز کردن منو"}
               aria-expanded={menuOpen}
               onClick={() => setMenuOpen((open) => !open)}
             >
@@ -92,26 +99,15 @@ export default function LandingPage() {
         <main className="landing-scroll" id="landing-scroll">
           <section className="landing-hero" data-scene="hero">
             <div className="landing-hero-inner">
-              <p className="landing-eyebrow">ساخت دقیق مدار چاپی</p>
               <h1 className="landing-hero-title">از گربر تا برد آماده</h1>
               <p className="landing-hero-copy">
                 از اولین نمونه تا تولید انبوه — فایل گربر را آپلود کن، جریان برق را در طراحی‌ات ببین و بردها را در کمتر از ۲۴ ساعت دریافت کن.
               </p>
               <div className="landing-hero-actions">
                 <Link href={APP_ROUTES.newOrder} className="landing-btn landing-btn-primary landing-btn-lg">
-                  شروع سفارش
+                  ثبت سفارش
                 </Link>
-                <a href="#process" className="landing-btn landing-btn-ghost landing-btn-lg">
-                  مشاهده فرآیند
-                </a>
               </div>
-            </div>
-            <div className="landing-scroll-hint" aria-hidden="true">
-              <span>اسکرول کن تا مدار را دنبال کنی</span>
-              <svg width="18" height="28" viewBox="0 0 18 28" fill="none">
-                <rect x="1" y="1" width="16" height="26" rx="8" stroke="currentColor" strokeWidth="1.5" />
-                <circle className="landing-scroll-dot" cx="9" cy="8" r="2" fill="currentColor" />
-              </svg>
             </div>
           </section>
 
@@ -156,22 +152,13 @@ export default function LandingPage() {
 
           <section className="landing-features" id="capabilities">
             <div className="landing-section-head">
-              <p className="landing-eyebrow">ساخته‌شده برای مهندسان</p>
               <h2>
                 هر آنچه پروژه‌ات نیاز دارد،
                 <br />
                 از ۲ لایه تا HDI.
               </h2>
             </div>
-            <div className="landing-feature-grid">
-              {FEATURE_CARDS.map((feature) => (
-                <article key={feature.title} className="landing-feature-card">
-                  <div className="landing-feature-icon">{feature.icon}</div>
-                  <h3>{feature.title}</h3>
-                  <p>{feature.description}</p>
-                </article>
-              ))}
-            </div>
+            <LandingSiteStats />
           </section>
 
           <section className="landing-cta">

@@ -9,9 +9,9 @@ export default function LandingSeoContent() {
 
   return (
     <section className="landing-seo" aria-label="توضیحات">
-      {!expanded ? <div className="landing-seo-fade" aria-hidden="true" /> : null}
       <div className="landing-seo-inner">
         <div className={`landing-seo-clip${expanded ? " is-expanded" : ""}`}>
+          {!expanded ? <div className="landing-seo-fade" aria-hidden="true" /> : null}
           <div
             id={contentId}
             className="landing-seo-content"
