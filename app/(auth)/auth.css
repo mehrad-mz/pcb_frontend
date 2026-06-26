@@ -18,6 +18,14 @@
   color-scheme: dark;
 }
 
+.auth-page:has(.auth-login) {
+  background-color: #172b26;
+  background-image: url("/auth-bg.svg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
 .auth-page .auth-brand {
   justify-content: center;
 }
