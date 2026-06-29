@@ -73,6 +73,43 @@ export const NAV_LINKS = [
   { href: "#capabilities", label: "قابلیت‌ها" },
 ] as const;
 
+export type FooterLink = {
+  href: string;
+  label: string;
+};
+
+export const FOOTER_IMPORTANT_LINKS: FooterLink[] = [
+  { href: "#products", label: "محصولات" },
+  { href: "#process", label: "فرآیند ساخت" },
+  { href: "#capabilities", label: "قابلیت‌ها" },
+  { href: APP_ROUTES.newOrder, label: "ثبت سفارش" },
+  { href: APP_ROUTES.help, label: "راهنما و پشتیبانی" },
+];
+
+export const FOOTER_ARTICLES: FooterLink[] = [
+  { href: APP_ROUTES.help, label: "راهنمای طراحی گربر" },
+  { href: APP_ROUTES.help, label: "انتخاب ضخامت مس و لایه" },
+  { href: APP_ROUTES.help, label: "پوشش سطحی ENIG در برابر HASL" },
+  { href: APP_ROUTES.help, label: "کنترل امپدانس در بردهای چندلایه" },
+];
+
+export type FooterSocial = {
+  id: string;
+  href: string;
+  label: string;
+};
+
+export const FOOTER_CONTACT = {
+  email: "info@globalpcb.com",
+  tagline: "از گربر تا برد آماده — ساخت سریع، کیفیت صنعتی.",
+} as const;
+
+export const FOOTER_SOCIALS: FooterSocial[] = [
+  { id: "instagram", href: "https://instagram.com", label: "اینستاگرام" },
+  { id: "telegram", href: "https://t.me", label: "تلگرام" },
+  { id: "linkedin", href: "https://linkedin.com", label: "لینکدین" },
+];
+
 export type ProductSummary = {
   id: string;
   title: string;

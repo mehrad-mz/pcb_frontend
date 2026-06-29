@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import LandingLink from "./LandingLink";
 import LandingProductsShowcase from "./LandingProductsShowcase";
 import LandingSceneLoader from "./LandingSceneLoader";
+import LandingFooter from "./LandingFooter";
 import LandingSeoContent from "./LandingSeoContent";
 import LandingSiteStats from "./LandingSiteStats";
 import { useLandingScroll } from "./useLandingScroll";
@@ -174,17 +175,7 @@ export default function LandingPage() {
 
           <LandingSeoContent />
 
-          <footer className="landing-footer">
-            <div className="landing-footer-inner">
-              <img src="/logo.svg" alt="" className="landing-brand-logo landing-brand-logo-sm" aria-hidden="true" />
-              <div className="landing-footer-links">
-                <a href={APP_ROUTES.help}>راهنما</a>
-                <a href={APP_ROUTES.help}>درباره ما</a>
-                <a href={APP_ROUTES.help}>تماس</a>
-              </div>
-              <p className="landing-footer-copy">&copy; {new Date().getFullYear()} Global PCB. تمام حقوق محفوظ است.</p>
-            </div>
-          </footer>
+          <LandingFooter />
         </main>
           </>
         ) : null}
