@@ -1638,6 +1638,14 @@ body {
   height: 100vh;
 }
 
+.landing-body--loading .landing-shell > .landing-nav,
+.landing-body--loading .landing-shell > .landing-mobile-menu,
+.landing-body--loading .landing-shell > .landing-scroll {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
 /* ─── 3D scene loader ───────────────────────────── */
 .landing-scene-loader {
   position: fixed;
