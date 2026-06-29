@@ -116,9 +116,11 @@
   transition: background-color 99999s ease-out 0s;
 }
 
+.auth-page [data-slot="input"]:focus,
 .auth-page [data-slot="input"]:focus-visible {
   border-color: var(--auth-primary);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--auth-ring) 35%, transparent);
+  box-shadow: none;
+  --tw-ring-shadow: 0 0 #0000;
 }
 
 /* Latin digits center more reliably than Persian font metrics in single-line inputs */

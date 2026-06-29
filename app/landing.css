@@ -99,6 +99,7 @@ body {
   display: block;
   z-index: 0;
   touch-action: pan-y;
+  pointer-events: none;
 }
 
 .landing-vignette {
@@ -185,13 +186,9 @@ body {
   font-weight: 600;
   text-decoration: none;
   border: 1px solid transparent;
-  transition: transform 0.2s var(--landing-ease), background 0.2s, border-color 0.2s, box-shadow 0.2s;
+  transition: background 0.2s var(--landing-ease), border-color 0.2s var(--landing-ease), box-shadow 0.2s var(--landing-ease), color 0.2s var(--landing-ease);
   cursor: pointer;
   white-space: nowrap;
-}
-
-.landing-btn:hover {
-  transform: translateY(-1px);
 }
 
 .landing-btn-primary {
@@ -200,7 +197,7 @@ body {
 }
 
 .landing-btn-primary:hover {
-  background: var(--brand-accent);
+  box-shadow: 0 0 0 2px rgba(var(--brand-accent-rgb), 0.4);
 }
 
 .landing-btn-ghost {
@@ -212,6 +209,10 @@ body {
 .landing-btn-ghost:hover {
   border-color: rgba(var(--brand-accent-rgb), 0.35);
   color: var(--landing-accent);
+}
+
+.landing-nav-actions .landing-nav-order-btn {
+  display: none;
 }
 
 .landing-btn-lg {
@@ -381,7 +382,7 @@ body {
   min-height: 100vh;
   display: flex;
   align-items: center;
-  padding: calc(var(--landing-nav-h) + 1rem) clamp(1.25rem, 4vw, 4rem) 2rem;
+  padding: 2rem clamp(1.25rem, 4vw, 4rem);
 }
 
 .landing-story-ui {
@@ -691,7 +692,7 @@ body {
 
 /* ─── Product showcase ───────────────────────────── */
 .landing-products {
-  padding: clamp(2.5rem, 6vw, 5rem) clamp(1.25rem, 4vw, 4rem);
+  padding: clamp(2.5rem, 6vw, 5rem) clamp(1.25rem, 4vw, 4rem) clamp(1.25rem, 3.5vw, 2.75rem);
 }
 
 .landing-products-showcase {
@@ -1195,7 +1196,7 @@ body {
     display: none;
   }
 
-  .landing-nav-actions .landing-btn-ghost {
+  .landing-nav-actions .landing-nav-order-btn {
     display: inline-flex;
   }
 
@@ -1221,12 +1222,6 @@ body {
 }
 
 @media (max-width: 767px) {
-  .landing-vignette {
-    background:
-      linear-gradient(to bottom, rgba(var(--brand-dark-rgb), 0.72) 0%, rgba(var(--brand-dark-rgb), 0.35) 28%, transparent 52%),
-      linear-gradient(to top, rgba(var(--brand-dark-rgb), 0.88) 0%, rgba(var(--brand-dark-rgb), 0.35) 35%, transparent 68%);
-  }
-
   .landing-hero {
     align-items: flex-end;
     justify-items: stretch;
@@ -1245,25 +1240,6 @@ body {
     box-shadow: none;
     direction: rtl;
     text-align: start;
-  }
-
-  .landing-hero-inner::before {
-    content: "";
-    position: absolute;
-    top: -2rem;
-    bottom: -0.5rem;
-    left: 50%;
-    width: 100vw;
-    transform: translateX(-50%);
-    z-index: -1;
-    pointer-events: none;
-    background: linear-gradient(
-      to top,
-      rgba(var(--brand-dark-rgb), 0.94) 0%,
-      rgba(var(--brand-dark-rgb), 0.72) 42%,
-      rgba(var(--brand-dark-rgb), 0.2) 72%,
-      transparent 100%
-    );
   }
 
   .landing-hero-title,
@@ -1297,10 +1273,6 @@ body {
   .landing-scroll-hint {
     bottom: 1rem;
     z-index: 3;
-  }
-
-  .landing-nav-actions .landing-btn-ghost {
-    display: none;
   }
 
   .landing-story-ui {

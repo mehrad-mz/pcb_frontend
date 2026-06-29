@@ -20,7 +20,7 @@ export function AuthShell({ title, description, children, className }: AuthShell
         aria-label="گلوبال PCB — صفحه اصلی"
       >
         <img
-          src="/logo.svg"
+          src="/SIGNLOGOTYPE4.svg"
           alt="گلوبال PCB"
           className="auth-brand-logo"
         />

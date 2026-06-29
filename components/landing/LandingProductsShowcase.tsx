@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import LandingLink from "./LandingLink";
 import { APP_ROUTES, LANDING_PRODUCTS, type ProductSummary } from "@/lib/landing-data";
 
 const PRODUCT_TRANSITION_MS = 220;
@@ -36,9 +36,9 @@ function ProductDetail({
       </ul>
       <p className="landing-product-price" dangerouslySetInnerHTML={{ __html: product.priceHtml }} />
       <div className="landing-product-actions">
-        <Link href={APP_ROUTES.newOrder} className="landing-btn landing-btn-primary">
+        <LandingLink href={APP_ROUTES.newOrder} className="landing-btn landing-btn-primary">
           سفارش
-        </Link>
+        </LandingLink>
       </div>
     </div>
   );

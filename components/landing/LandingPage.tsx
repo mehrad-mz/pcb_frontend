@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import LandingLink from "./LandingLink";
 import LandingProductsShowcase from "./LandingProductsShowcase";
 import LandingSceneLoader from "./LandingSceneLoader";
 import LandingSeoContent from "./LandingSeoContent";
@@ -64,12 +65,12 @@ export default function LandingPage() {
           </nav>
 
           <div className="landing-nav-actions">
-            <Link href={APP_ROUTES.login} className="landing-btn landing-btn-ghost">
+            <LandingLink href={APP_ROUTES.login} className="landing-btn landing-btn-ghost">
               ورود / ثبت‌نام
-            </Link>
-            <Link href={APP_ROUTES.newOrder} className="landing-btn landing-btn-primary">
+            </LandingLink>
+            <LandingLink href={APP_ROUTES.newOrder} className="landing-btn landing-btn-primary landing-nav-order-btn">
               ثبت سفارش
-            </Link>
+            </LandingLink>
             <button
               type="button"
               className="landing-menu-toggle"
@@ -90,9 +91,9 @@ export default function LandingPage() {
                 {link.label}
               </a>
             ))}
-            <Link href={APP_ROUTES.newOrder} onClick={closeMenu}>
+            <LandingLink href={APP_ROUTES.newOrder} onClick={closeMenu}>
               ثبت سفارش
-            </Link>
+            </LandingLink>
           </div>
         ) : null}
 
@@ -104,9 +105,9 @@ export default function LandingPage() {
                 از اولین نمونه تا تولید انبوه — فایل گربر را آپلود کن، جریان برق را در طراحی‌ات ببین و بردها را در کمتر از ۲۴ ساعت دریافت کن.
               </p>
               <div className="landing-hero-actions">
-                <Link href={APP_ROUTES.newOrder} className="landing-btn landing-btn-primary landing-btn-lg">
+                <LandingLink href={APP_ROUTES.newOrder} className="landing-btn landing-btn-primary landing-btn-lg">
                   ثبت سفارش
-                </Link>
+                </LandingLink>
               </div>
             </div>
           </section>
@@ -165,9 +166,9 @@ export default function LandingPage() {
             <div className="landing-cta-inner">
               <h2>آماده‌ای طراحی بعدی‌ات را زنده کنی؟</h2>
               <p>گربر آپلود کن، مشخصات را تنظیم کن و ببین بردت جان می‌گیرد.</p>
-              <Link href={APP_ROUTES.newOrder} className="landing-btn landing-btn-primary landing-btn-lg">
+              <LandingLink href={APP_ROUTES.newOrder} className="landing-btn landing-btn-primary landing-btn-lg">
                 همین حالا سفارش بده
-              </Link>
+              </LandingLink>
             </div>
           </section>
 
